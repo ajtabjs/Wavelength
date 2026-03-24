@@ -1,0 +1,9 @@
+.iframe-container {
+	position: relative;
+	width: 80vw;
+	height: 82vh;
+	margin: -70px 55px 25px 70px;
+	border-radius: 10px;
+	overflow: hidden;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
