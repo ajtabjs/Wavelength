@@ -91,6 +91,8 @@
                 <div class="panel">
                   <div class="panel-header">
                     &#9670; Chat &nbsp;<span id="chat-user-label" style="font-weight:normal;font-size:10px;opacity:0.85;"></span>
+                    <span id="chat-user-label" style="font-weight:normal;font-size:10px;opacity:0.85;"></span>
+                    <button onclick="changeUsername()" class="win-btn" style="font-size:9px; margin-left:10px; padding: 2px 5px;">[ CHANGE NAME ]</button>
                   </div>
                   <div class="panel-body" style="padding:0;display:flex;flex-direction:column;height:68vh;">
                     <div id="chat-messages" class="chat-messages"></div>
@@ -271,6 +273,12 @@
         return String(s)
           .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       }
+
+      window.changeUsername = function() {
+        localStorage.removeItem('wl_username'); // Delete the saved name
+        document.getElementById('chat-ui').style.display = 'none'; // Hide chat
+        window.openChatTab(); // Re-run the login logic to show the modal
+      };
     </script>
 
 </body>
