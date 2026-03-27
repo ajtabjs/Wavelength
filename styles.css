@@ -197,3 +197,76 @@ body {
     border-bottom: 1px solid #fff;
     margin: 10px 0;
 }
+
+/* ── CHAT ─────────────────────────────────────────── */
+.modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200;
+}
+.modal-box {
+    background: #c0c0c0;
+    border: 3px solid;
+    border-color: #fff #808080 #808080 #fff;
+    min-width: 260px;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    background: #fff;
+    border: 2px solid;
+    border-color: #808080 #fff #fff #808080;
+    padding: 6px 8px;
+    font-size: 11px;
+    line-height: 1.8;
+}
+
+.chat-msg {
+    display: flex;
+    gap: 5px;
+    align-items: baseline;
+    flex-wrap: wrap;
+    padding: 2px 0;
+    border-bottom: 1px dotted #ddd;
+}
+
+.msg-user  { font-weight: bold; color: #000080; white-space: nowrap; }
+.msg-time  { font-size: 9px; color: #888; white-space: nowrap; }
+.msg-text  { color: #222; flex: 1; word-break: break-word; }
+
+/* Your own messages: username shows in orange to match credits style */
+.chat-msg-mine .msg-user { color: #804000; }
+
+.msg-del {
+    background: none; border: none;
+    font-size: 9px; color: #800000;
+    cursor: pointer; opacity: 0.4; padding: 0 2px;
+}
+.msg-del:hover { opacity: 1; }
+
+.chat-footer {
+    display: flex; gap: 4px;
+    padding: 6px;
+    border-top: 2px solid #808080;
+    background: #c0c0c0;
+}
+
+.chat-input-field {
+    flex: 1;
+    font-family: inherit; font-size: 11px;
+    border: 2px solid;
+    border-color: #808080 #fff #fff #808080;
+    background: #fff;
+    padding: 2px 5px;
+}
+
+.win-btn {
+    font-family: inherit; font-size: 11px; font-weight: bold;
+    border: 2px solid;
+    border-color: #fff #808080 #808080 #fff;
+    background: #c0c0c0;
+    cursor: pointer; padding: 2px 8px; white-space: nowrap;
+}
+.win-btn:active { border-color: #808080 #fff #fff #808080; }
