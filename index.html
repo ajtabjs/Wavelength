@@ -64,8 +64,42 @@
 
             <!-- GAMES -->
             <div id="tab-games" class="tab-panel">
-                <h2>games</h2>
-                <p>Games content goes here.</p>
+              
+              <!-- List View -->
+              <div id="games-list-view">
+                <div class="games-controls">
+                  <div class="games-filters">
+                    <button class="games-filter-btn active" data-filter="all">All</button>
+                    <button class="games-filter-btn" data-filter="html">HTML5</button>
+                    <button class="games-filter-btn" data-filter="ruffle">Flash</button>
+                    <button class="games-filter-btn" data-filter="webPorts">Web Ports</button>
+                  </div>
+                  <div class="games-search-row">
+                    <input type="search" id="games-search" class="games-search-input" placeholder="Search games..." />
+                    <select id="games-sort" class="games-sort-select">
+                      <option value="alpha-asc">A → Z</option>
+                      <option value="alpha-desc">Z → A</option>
+                    </select>
+                  </div>
+                </div>
+                <div id="games-grid" class="games-grid"></div>
+                <div id="games-sentinel" class="games-sentinel"></div>
+                <div id="games-status" class="games-status"></div>
+              </div>
+
+              <!-- Play View (iframe) -->
+              <div id="games-play-view" style="display:none;">
+                <div class="play-header">
+                  <button class="win-btn" onclick="closeGame()">← Back to Games</button>
+                  <span id="play-title" class="play-title">Game</span>
+                  <span id="play-type" class="play-type-badge"></span>
+                </div>
+                <div class="play-frame-wrap">
+                  <iframe id="game-iframe" class="game-iframe" allowfullscreen 
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-top-navigation"></iframe>
+                </div>
+              </div>
+
             </div>
 
             <!-- CHAT -->
@@ -158,6 +192,7 @@
         </div>
     </div>
 
+    <script src="games-loader.js"></script>
     <script>
         function switchTab(name, e) {
             document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));

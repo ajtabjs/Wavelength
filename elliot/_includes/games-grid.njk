@@ -1,0 +1,61 @@
+{#
+  Game list grid shell.
+  The actual cards are rendered by games-loader.js from window.__GAMES_DATA__.
+  This template just seeds the data and provides the mount point.
+
+  Expected front matter on the page:
+    - pageType: "html" | "ruffle" | "webPorts" | "all"
+#}
+
+{# Seed the raw JSON data into the page so the JS loader can use it #}
+<script>
+  window.__BASE_URLS__ = {{ baseUrls | dump | safe }};
+
+  {% if pageType === "all" %}
+    window.__GAMES_DATA__ = [
+      {% for g in htmlGames %}
+        { "name": {{ g.name | dump | safe }}, "slug": {{ g.slug | dump | safe }}, "path": {{ g.path | dump | safe }}, "thumbnail": {{ g.thumbnail | dump | safe }}, "description": {{ g.description | dump | safe }}, "type": "html" },
+      {% endfor %}
+      {% for g in ruffleGames %}
+        { "name": {{ g.name | dump | safe }}, "slug": {{ g.slug | dump | safe }}, "path": {{ g.path | dump | safe }}, "thumbnail": {{ g.thumbnail | dump | safe }}, "description": {{ g.description | dump | safe }}, "type": "ruffle" },
+      {% endfor %}
+      {% for g in webPorts %}
+        { "name": {{ g.name | dump | safe }}, "slug": {{ g.slug | dump | safe }}, "path": {{ g.path | dump | safe }}, "thumbnail": {{ g.thumbnail | dump | safe }}, "description": {{ g.description | dump | safe }}, "type": "webPorts" },
+      {% endfor %}
+    ];
+  {% elif pageType === "html" %}
+    window.__GAMES_DATA__ = {{ htmlGames | dump | safe }}.map(g => ({ ...g, type: "html" }));
+  {% elif pageType === "ruffle" %}
+    window.__GAMES_DATA__ = {{ ruffleGames | dump | safe }}.map(g => ({ ...g, type: "ruffle" }));
+  {% elif pageType === "webPorts" %}
+    window.__GAMES_DATA__ = {{ webPorts | dump | safe }}.map(g => ({ ...g, type: "webPorts" }));
+  {% endif %}
+</script>
+
+<div class="games-page">
+
+  <div class="games-controls">
+    <input
+      type="search"
+      id="games-search"
+      class="games-search"
+      placeholder="Search games…"
+      aria-label="Search games"
+    />
+    <select id="games-sort" class="games-sort" aria-label="Sort games">
+      <option value="alpha-asc">A → Z</option>
+      <option value="alpha-desc">Z → A</option>
+    </select>
+  </div>
+
+  <div id="games-grid" class="games-grid" aria-live="polite">
+    {# Cards injected here by games-loader.js #}
+  </div>
+
+  <div id="games-sentinel" class="games-sentinel" aria-hidden="true"></div>
+
+  <p id="games-status" class="games-status" aria-live="polite"></p>
+
+</div>
+
+<script src="/public/js/games-loader.js"></script>
