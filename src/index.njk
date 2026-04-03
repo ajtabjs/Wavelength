@@ -92,14 +92,14 @@ permalink: /index.html
 
               <!-- Play View (iframe) -->
               <div id="games-play-view" style="display:none;">
-                <div class="play-header">
-                  <button class="win-btn" onclick="closeGame()">← Back to Games</button>
-                  <span id="play-title" class="play-title">Game</span>
-                  <span id="play-type" class="play-type-badge"></span>
-                </div>
-                <div class="play-frame-wrap">
-                  <iframe id="game-iframe" class="game-iframe" allowfullscreen 
+                <button class="back-btn win-btn" onclick="closeGame()">← back</button>
+                <div class="iframe-container">
+                  <iframe id="game-iframe" class="gameframe" allowfullscreen 
                     sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-top-navigation"></iframe>
+                </div>
+                <div class="iframe-buttons">
+                  <button class="win-btn" onclick="toggleFullscreen()">fullscreen</button>
+                  <button class="win-btn" onclick="openCloaked()">open in new tab (cloaked)</button>
                 </div>
               </div>
 

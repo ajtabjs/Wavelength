@@ -182,12 +182,12 @@
     const baseUrl = baseUrls[type] || "";
     const gameUrl = `${baseUrl}${game.path}`;
 
+    // Store current game URL for fullscreen/cloak functions
+    window.__CURRENT_GAME_URL__ = gameUrl;
+
     // Switch to iframe view
     document.getElementById("games-list-view").style.display = "none";
     document.getElementById("games-play-view").style.display = "block";
-    document.getElementById("play-title").textContent = game.name;
-    document.getElementById("play-type").textContent = TYPE_LABELS[type];
-    document.getElementById("play-type").className = `play-type-badge play-type-badge--${type}`;
     
     const iframe = document.getElementById("game-iframe");
     iframe.src = gameUrl;
@@ -199,6 +199,46 @@
     document.getElementById("games-play-view").style.display = "none";
     document.getElementById("games-list-view").style.display = "block";
     document.getElementById("game-iframe").src = "";
+    window.__CURRENT_GAME_URL__ = null;
+  };
+
+  window.toggleFullscreen = function() {
+    const iframe = document.getElementById("game-iframe");
+    if (iframe.requestFullscreen) {
+      iframe.requestFullscreen();
+    } else if (iframe.webkitRequestFullscreen) {
+      iframe.webkitRequestFullscreen();
+    } else if (iframe.msRequestFullscreen) {
+      iframe.msRequestFullscreen();
+    }
+  };
+
+  window.openCloaked = function() {
+    const gameUrl = window.__CURRENT_GAME_URL__;
+    if (!gameUrl) return;
+
+    // Open in about:blank and write iframe to it (cloaked)
+    const win = window.open("about:blank", "_blank");
+    if (win) {
+      win.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Google</title>
+          <link rel="icon" href="https://www.google.com/favicon.ico">
+          <style>
+            * { margin: 0; padding: 0; }
+            html, body { height: 100%; overflow: hidden; }
+            iframe { width: 100%; height: 100%; border: none; }
+          </style>
+        </head>
+        <body>
+          <iframe src="${gameUrl}" allowfullscreen></iframe>
+        </body>
+        </html>
+      `);
+      win.document.close();
+    }
   };
 
   function setStatus(msg) {
