@@ -1,10 +1,13 @@
 /**
  * games-loader.js
- * Loads games from JSON files and renders them in the Wavelength UI.
- * To add games: edit the JSON files in /games/ folder:
+ * Loads games from Eleventy-injected data and renders them in the Wavelength UI.
+ * 
+ * To add games: edit the JSON files in /_data/ folder:
  *   - htmlGames.json   → HTML5 games
  *   - ruffleGames.json → Flash/Ruffle games
  *   - webPorts.json    → Web ports
+ *
+ * Then run: npm run build (or npm start for dev server)
  *
  * Each game entry format:
  * {
@@ -36,7 +39,7 @@
   // DOM refs
   let grid, sentinel, statusEl, searchEl, sortEl;
 
-  async function init() {
+  function init() {
     grid = document.getElementById("games-grid");
     sentinel = document.getElementById("games-sentinel");
     statusEl = document.getElementById("games-status");
@@ -45,55 +48,39 @@
 
     if (!grid) return;
 
-    try {
-      // Load base URLs and all game data
-      const [urlsRes, htmlRes, ruffleRes, portsRes] = await Promise.all([
-        fetch("games/baseUrls.json"),
-        fetch("games/htmlGames.json"),
-        fetch("games/ruffleGames.json"),
-        fetch("games/webPorts.json")
-      ]);
-
-      baseUrls = await urlsRes.json();
-      const htmlGames = await htmlRes.json();
-      const ruffleGames = await ruffleRes.json();
-      const webPorts = await portsRes.json();
-
-      // Combine all games with type tags
-      allGames = [
-        ...htmlGames.map(g => ({ ...g, type: "html" })),
-        ...ruffleGames.map(g => ({ ...g, type: "ruffle" })),
-        ...webPorts.map(g => ({ ...g, type: "webPorts" }))
-      ];
-
-      applyFilters();
-
-      // Event listeners
-      searchEl?.addEventListener("input", debounce(applyFilters, 200));
-      sortEl?.addEventListener("change", applyFilters);
-
-      // Filter buttons
-      document.querySelectorAll(".games-filter-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-          document.querySelectorAll(".games-filter-btn").forEach(b => b.classList.remove("active"));
-          btn.classList.add("active");
-          currentFilter = btn.dataset.filter;
-          applyFilters();
-        });
-      });
-
-      // Infinite scroll
-      const observer = new IntersectionObserver(entries => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) loadNextChunk();
-        });
-      }, { rootMargin: "200px" });
-      observer.observe(sentinel);
-
-    } catch (err) {
-      console.error("Failed to load games:", err);
-      grid.innerHTML = '<div class="games-error">Failed to load games. Please refresh.</div>';
+    // Use Eleventy-injected data (set in index.njk at build time)
+    if (!window.__GAMES_DATA__ || !window.__BASE_URLS__) {
+      console.error("games-loader: __GAMES_DATA__ or __BASE_URLS__ not found. Did Eleventy build?");
+      grid.innerHTML = '<div class="games-error">Game data not found. Run npm run build.</div>';
+      return;
     }
+
+    baseUrls = window.__BASE_URLS__;
+    allGames = window.__GAMES_DATA__;
+
+    applyFilters();
+
+    // Event listeners
+    searchEl?.addEventListener("input", debounce(applyFilters, 200));
+    sortEl?.addEventListener("change", applyFilters);
+
+    // Filter buttons
+    document.querySelectorAll(".games-filter-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".games-filter-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentFilter = btn.dataset.filter;
+        applyFilters();
+      });
+    });
+
+    // Infinite scroll
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) loadNextChunk();
+      });
+    }, { rootMargin: "200px" });
+    observer.observe(sentinel);
   }
 
   function applyFilters() {

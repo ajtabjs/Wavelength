@@ -1,9 +1,0 @@
-[
-  {
-    "name": "Example Web Port",
-    "slug": "example-web-port",
-    "path": "ExamplePort/index.html",
-    "thumbnail": "ExamplePort/thumbnail.jpg",
-    "description": "A web port of a classic game."
-  }
-]
