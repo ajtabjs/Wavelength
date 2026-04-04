@@ -3,10 +3,9 @@ module.exports = function(eleventyConfig) {
   eleventyConfig.addPassthroughCopy("assets");
   eleventyConfig.addPassthroughCopy("fonts");
   eleventyConfig.addPassthroughCopy("styles.css");
-  eleventyConfig.addPassthroughCopy("iframe.css");
-  eleventyConfig.addPassthroughCopy("iframe.html");
   eleventyConfig.addPassthroughCopy("games-loader.js");
   eleventyConfig.addPassthroughCopy("credits.txt");
+  eleventyConfig.addPassthroughCopy("firebase-config.js");
 
   // Make data available globally
   eleventyConfig.addGlobalData("baseUrls", require("./_data/baseUrls.json"));
