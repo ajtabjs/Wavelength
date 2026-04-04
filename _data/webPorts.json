@@ -3,7 +3,7 @@
     "name": "A Difficult Game About Climbing",
     "slug": "adgac",
     "path": "adgac/index.html",
-    "thumbnail": "adgac/thumbnail.jpg",
+    "thumbnail": "adgac.webp",
     "description": ""
   },
   {
@@ -266,10 +266,10 @@
     "description": ""
   },
   {
-    "name": "GXC Game",
+    "name": "sonic.exe",
     "slug": "sonic.exe",
     "path": "sonic.exe/index.html",
-    "thumbnail": "sonic.exe/thumbnail.jpg",
+    "thumbnail": "sonic.exe.png",
     "description": ""
   },
   {
