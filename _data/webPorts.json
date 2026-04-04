@@ -10,7 +10,7 @@
     "name": "Amanda The Adventurer",
     "slug": "amanda-the-adventurer",
     "path": "amanda-the-adventurer/index.html",
-    "thumbnail": "amanda-the-adventurer/thumbnail.jpg",
+    "thumbnail": "aman.webp",
     "description": ""
   },
   {
@@ -45,14 +45,14 @@
     "name": "Baldi's Basics Plus",
     "slug": "baldi-plus",
     "path": "baldi-plus/index.html",
-    "thumbnail": "baldi-plus/thumbnail.jpg",
+    "thumbnail": "baldiplus.webp",
     "description": ""
   },
   {
     "name": "Baldi's Basics Classic Remastered",
     "slug": "baldi-remaster",
     "path": "baldi-remaster/index.html",
-    "thumbnail": "baldi-remaster/thumbnail.jpg",
+    "thumbnail": "bfs.webp",
     "description": ""
   },
   {
@@ -66,7 +66,7 @@
     "name": "Bendy and the Ink Machine",
     "slug": "bendy",
     "path": "bendy/index.html",
-    "thumbnail": "bendy/thumbnail.jpg",
+    "thumbnail": "bendy.webp",
     "description": ""
   },
   {
@@ -87,7 +87,7 @@
     "name": "Buckshot Roulette",
     "slug": "buckshot-roulette",
     "path": "buckshot-roulette/index.html",
-    "thumbnail": "buckshot-roulette/thumbnail.jpg",
+    "thumbnail": "buck.webp",
     "description": ""
   },
   {
@@ -115,28 +115,28 @@
     "name": "DEAD PLATE",
     "slug": "dead-plate",
     "path": "dead-plate/index.html",
-    "thumbnail": "dead-plate/thumbnail.jpg",
+    "thumbnail": "deadp.webp",
     "description": ""
   },
   {
     "name": "The Deadseat",
     "slug": "deadseat",
     "path": "deadseat/index.html",
-    "thumbnail": "deadseat/thumbnail.jpg",
+    "thumbnail": "deadseat.webp",
     "description": ""
   },
   {
     "name": "DELTATRAVELER",
     "slug": "deltatraveler",
     "path": "deltatraveler/index.html",
-    "thumbnail": "deltatraveler/thumbnail.jpg",
+    "thumbnail": "deltatr.webp",
     "description": ""
   },
   {
     "name": "Do NOT Take This Cat Home",
     "slug": "donottakethiscathome",
     "path": "donottakethiscathome/index.html",
-    "thumbnail": "donottakethiscathome/thumbnail.jpg",
+    "thumbnail": "dont.webp",
     "description": ""
   },
   {
@@ -171,7 +171,7 @@
     "name": "HUMAN EXPENDITURE PROGRAM",
     "slug": "human-expenditure-program",
     "path": "human-expenditure-program/index.html",
-    "thumbnail": "human-expenditure-program/thumbnail.jpg",
+    "thumbnail": "human.webp",
     "description": ""
   },
   {
@@ -206,7 +206,7 @@
     "name": "Lacey's Flash Games",
     "slug": "lacysflashgames",
     "path": "lacysflashgames/index.html",
-    "thumbnail": "lacysflashgames/thumbnail.jpg",
+    "thumbnail": "lacey.webp",
     "description": ""
   },
   {
@@ -262,14 +262,14 @@
     "name": "Slender",
     "slug": "slender",
     "path": "slender/index.html",
-    "thumbnail": "slender/thumbnail.jpg",
+    "thumbnail": "slender.webp",
     "description": ""
   },
   {
     "name": "sonic.exe",
     "slug": "sonic.exe",
     "path": "sonic.exe/index.html",
-    "thumbnail": "sonic.exe.png",
+    "thumbnail": "sonicexe.webp",
     "description": ""
   },
   {
@@ -325,7 +325,7 @@
     "name": "Witch's Heart",
     "slug": "witch-heart",
     "path": "witch-heart/index.html",
-    "thumbnail": "witch-heart/thumbnail.jpg",
+    "thumbnail": "witches.webp",
     "description": ""
   },
   {

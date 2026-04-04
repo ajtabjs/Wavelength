@@ -22,3 +22,7 @@ npm-debug.log*
 .env.local
 firebase-config.js
 bfg.jar
+
+output/
+*.har
+games
