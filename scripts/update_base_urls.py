@@ -22,8 +22,8 @@ except ImportError:
 
 # Repo configuration: key -> (owner, repo, branch)
 REPOS = {
-    "html": ("ajtabjs", "wl-main", "main"),
-    "ruffle": ("ajtabjs", "wl-ruffle", "main"),
+    "html": ("ajtabjs", "wl-main", "master"),
+    "ruffle": ("ajtabjs", "wl-ruffle", "master"),
     "webPorts": ("ajtabjs", "wl-ports2", "main"),
 }
 
