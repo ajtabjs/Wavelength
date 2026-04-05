@@ -1,3 +1,35 @@
+
+/* Digital Disco */
+
+@font-face { 
+  font-family: "Digital Disco";
+  font-style: normal;
+  font-weight: 400;
+  src: 
+    url(https://anthonyfontano.pages.dev/DigitalDisco.ttf) format("truetype");
+}
+
+
+  body {
+   font-family: "Digital Disco", sans-serif;
+}
+
+/* Digital Disco Thin */
+
+@font-face { 
+  font-family: "Digital Disco Thin";
+  font-style: normal;
+  font-weight: 400;
+  src: 
+    url(https://anthonyfontano.pages.dev/DigitalDisco-Thin.ttf) format("truetype");
+}
+
+
+  body {
+   font-family: "Digital Disco Thin", sans-serif;
+}
+
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
@@ -10,7 +42,7 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
-    font-family: 'Arial', sans-serif;
+    font-family: 'Digital Disco', 'Digital Disco Thin','Arial', sans-serif;
 }
 
 .centered {

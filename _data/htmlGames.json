@@ -24,11 +24,11 @@
     "description": ""
   },
   {
-    "name": "1v1",
+    "name": "1v1 Space",
     "slug": "1v1space",
     "path": "1v1space/index.html",
     "cdn": "html",
-    "thumbnail": "webp/1v1.webp",
+    "thumbnail": "../404.jpg",
     "description": ""
   },
   {
