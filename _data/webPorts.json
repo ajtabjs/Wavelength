@@ -227,14 +227,14 @@
     "name": "People Playground",
     "slug": "people-playground",
     "path": "people-playground/index.html",
-    "thumbnail": "gn/png/people-playground-m.png",
+    "thumbnail": "webp/peoplepg.webp",
     "description": ""
   },
   {
     "name": "Pizza Tower",
     "slug": "pizza-tower",
     "path": "pizza-tower/index.html",
-    "thumbnail": "gn/png/pizza-tower.png",
+    "thumbnail": "webp/pizzatower.webp",
     "description": ""
   },
   {
@@ -248,7 +248,7 @@
     "name": "R.E.P.O",
     "slug": "repo",
     "path": "repo/index.html",
-    "thumbnail": "gn/png/repo.png",
+    "thumbnail": "webp/repo.webp",
     "description": ""
   },
   {
