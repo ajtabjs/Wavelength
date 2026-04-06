@@ -383,5 +383,19 @@
     "path": "mari0/index.html",
     "thumbnail": "jpeg/mari0.jpeg",
     "description": ""
+  },
+   {
+    "name": "Karlson 2D",
+    "slug": "karlson2d",
+    "path": "truffledkarlson2d/index.html",
+    "thumbnail": "webp/karlson2d.webp",
+    "description": ""
+  },
+  {
+    "name": "Super Mario 64 FPS",
+    "slug": "sm64fps",
+    "path": "sm64fps/index.html",
+    "thumbnail": "png/sm64fps.png",
+    "description": ""
   }
 ]
