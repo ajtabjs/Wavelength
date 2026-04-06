@@ -418,5 +418,13 @@
     "path": "helltaker/index.html",
     "thumbnail": "../404.jpg",
     "description": ""
+  },
+    {
+    "name": "Baldi's Basics",
+    "slug": "baldis-basics",
+    "path": "baldis-basics/index.html",
+    "cdn": "html",
+    "thumbnail": "gn/png/baldis-basics.png",
+    "description": ""
   }
 ]
