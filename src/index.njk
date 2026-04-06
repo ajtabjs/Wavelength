@@ -263,6 +263,7 @@ permalink: /index.html
       window.__BASE_URLS__     = {{ statically | dump | safe }};
       window.__JSDELIVR_URLS__ = {{ jsdelivr | dump | safe }};
       window.__GITHACK_URLS__  = {{ githack | dump | safe }};
+      window.__STATICDELIVR_URLS__ = {{ staticdelivr | dump | safe }};
       window.__CREDITS_MAPPING__ = {{ creditsMapping | dump | safe }};
       window.__GAMES_DATA__ = [
         {% for g in htmlGames %}
