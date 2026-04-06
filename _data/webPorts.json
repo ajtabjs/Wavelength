@@ -404,5 +404,12 @@
     "path": "AVHPort/index.html",
     "thumbnail": "webp/avh.webp",
     "description": ""
+  },
+    {
+    "name": "Celeste",
+    "slug": "celeste",
+    "path": "celeste/index.html",
+    "thumbnail": "webp/celeste.webp",
+    "description": ""
   }
 ]
