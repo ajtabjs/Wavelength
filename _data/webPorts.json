@@ -362,5 +362,12 @@
     "path": "balatro/index.html",
     "thumbnail": "webp/bal.webp",
     "description": ""
+  },
+    {
+    "name": "Five Nights at Epstein's",
+    "slug": "fnae",
+    "path": "fnae/index.html",
+    "thumbnail": "png/fnae.png",
+    "description": ""
   }
 ]
