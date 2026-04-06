@@ -1,3 +1,3 @@
-<img src="./assets/png/logo.png" width="50%">
+<img src="./assets/png/logo.png">
 
 A games website that just happens to be UBG
