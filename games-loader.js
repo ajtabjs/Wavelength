@@ -207,7 +207,14 @@
     document.getElementById("games-play-view").style.display = "block";
     
     const iframe = document.getElementById("game-iframe");
+    iframe.style.display = "block";
     iframe.src = gameUrl;
+    
+    // Hide cloaked message if it exists
+    const messageEl = document.getElementById("cloaked-message");
+    if (messageEl) {
+      messageEl.style.display = "none";
+    }
   }
 
   window.playGame = playGame;
@@ -215,7 +222,16 @@
   window.closeGame = function() {
     document.getElementById("games-play-view").style.display = "none";
     document.getElementById("games-list-view").style.display = "block";
-    document.getElementById("game-iframe").src = "";
+    const iframe = document.getElementById("game-iframe");
+    iframe.src = "";
+    iframe.style.display = "block";
+    
+    // Hide cloaked message if it exists
+    const messageEl = document.getElementById("cloaked-message");
+    if (messageEl) {
+      messageEl.style.display = "none";
+    }
+    
     window.__CURRENT_GAME_URL__ = null;
     window.__CURRENT_GAME__ = null;
   };
@@ -249,6 +265,23 @@
       win.document.body.style.margin = "0";
       win.document.body.style.overflow = "hidden";
       win.document.body.appendChild(iframe);
+
+      // Clear the local iframe and show message
+      const localIframe = document.getElementById("game-iframe");
+      const container = document.querySelector(".iframe-container");
+      localIframe.src = "";
+      localIframe.style.display = "none";
+      
+      // Create or update message element
+      let messageEl = document.getElementById("cloaked-message");
+      if (!messageEl) {
+        messageEl = document.createElement("div");
+        messageEl.id = "cloaked-message";
+        messageEl.style.cssText = "display: flex; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 20px; font-size: 14px; color: #000080; font-weight: bold; letter-spacing: 0.5px;";
+        container.appendChild(messageEl);
+      }
+      messageEl.style.display = "flex";
+      messageEl.textContent = "Game opened in new tab (cloaked). Use the back button to return to the games list.";
     }
   };
 
