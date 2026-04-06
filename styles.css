@@ -12,15 +12,6 @@
     url(https://anthonyfontano.pages.dev/DigitalDisco.ttf) format("truetype");
 }
 
-
-  body {
-   font-family: "Digital Disco", sans-serif;
-   letter-spacing: 0.5px;
-   line-height: 1.5;
-   -webkit-text-stroke: 1px white;
-   paint-order: stroke fill;
-}
-
 /* Digital Disco Thin */
 
 @font-face { 
@@ -35,6 +26,10 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
+      letter-spacing: 0.5px;
+   line-height: 1.5;
+   -webkit-text-stroke: 1px white;
+   paint-order: stroke fill;
     background-color: rgba(0, 128, 128);
     background-image:
         linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
