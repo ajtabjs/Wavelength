@@ -304,14 +304,6 @@
     "description": ""
   },
   {
-    "name": "Baldi's Basics",
-    "slug": "baldis-basics",
-    "path": "baldis-basics/index.html",
-    "cdn": "html",
-    "thumbnail": "gn/png/baldis-basics.png",
-    "description": ""
-  },
-  {
     "name": "Ballistic Chickens",
     "slug": "ballistic-chickens",
     "path": "ballistic-chickens/index.html",
