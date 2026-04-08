@@ -492,7 +492,7 @@ body {
 .iframe-container {
     flex: 1;
     height: 68vh;
-    background: #000;
+    background: #ffff;
     position: relative;
     overflow: hidden;
 }
