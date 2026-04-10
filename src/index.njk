@@ -159,6 +159,7 @@ permalink: /index.html
                     <p style="font-size:12px;margin-bottom:8px;">Choose a username:</p>
                     <input id="username-input" class="chat-input-field" type="text" maxlength="20" placeholder="your_name_here..."
                       onkeydown="if(event.key==='Enter')joinChat()">
+                    <div id="username-error" style="color:#ff6b6b;font-size:11px;min-height:16px;margin-top:4px;"></div>
                     <div style="margin-top:8px;">
                       <button class="win-btn" onclick="joinChat()">[ JOIN ]</button>
                     </div>
@@ -323,7 +324,8 @@ permalink: /index.html
       import { initializeApp }
         from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
       import { getFirestore, collection, addDoc, onSnapshot,
-               query, orderBy, limit, deleteDoc, doc, serverTimestamp }
+               query, orderBy, limit, deleteDoc, doc, 
+               serverTimestamp, getDoc, setDoc }
         from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
       import { firebaseConfig } from './firebase-config.js';
 
@@ -336,23 +338,44 @@ permalink: /index.html
       let currentUser = null;
       let chatStarted = false;
 
-      window.openChatTab = function () {
+      window.openChatTab = async function () {
         const saved = localStorage.getItem('wl_username');
         if (saved) {
-          currentUser = saved;
-          showChatUI();
-        } else {
-          document.getElementById('username-modal').style.display = 'flex';
-          setTimeout(() => document.getElementById('username-input').focus(), 50);
+          const nameRef = doc(db, 'usernames', saved.toLowerCase());
+          const snap = await getDoc(nameRef);
+          // If the name exists and belongs to us, or doesn't exist yet, re-claim it
+          if (!snap.exists() || snap.data().uid === uid) {
+            await setDoc(nameRef, { uid, name: saved });
+            currentUser = saved;
+            showChatUI();
+            return;
+          } else {
+            // Someone else claimed our old name while we were gone
+            localStorage.removeItem('wl_username');
+          }
         }
+        document.getElementById('username-modal').style.display = 'flex';
+        setTimeout(() => document.getElementById('username-input').focus(), 50);
       };
 
-      window.joinChat = function () {
+      window.joinChat = async function () {
         const name = document.getElementById('username-input').value.trim();
+        const errorEl = document.getElementById('username-error');
         if (!name) return;
+
+        const nameRef = doc(db, 'usernames', name.toLowerCase());
+        const snap = await getDoc(nameRef);
+
+        if (snap.exists() && snap.data().uid !== uid) {
+          errorEl.textContent = '✕ that name is taken, choose another.';
+          return;
+        }
+
+        await setDoc(nameRef, { uid, name });
         currentUser = name;
         localStorage.setItem('wl_username', name);
         document.getElementById('username-modal').style.display = 'none';
+        errorEl.textContent = '';
         showChatUI();
       };
 
@@ -461,10 +484,22 @@ permalink: /index.html
           .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       }
 
-      window.changeUsername = function() {
+      window.changeUsername = async function () {
+        // Release the old name from the db
+        if (currentUser) {
+          const oldRef = doc(db, 'usernames', currentUser.toLowerCase());
+          const oldSnap = await getDoc(oldRef);
+          if (oldSnap.exists() && oldSnap.data().uid === uid) {
+            await deleteDoc(oldRef);
+          }
+        }
+        currentUser = null;
         localStorage.removeItem('wl_username');
         document.getElementById('chat-ui').style.display = 'none';
-        window.openChatTab();
+        document.getElementById('username-input').value = '';
+        document.getElementById('username-error').textContent = '';
+        document.getElementById('username-modal').style.display = 'flex';
+        setTimeout(() => document.getElementById('username-input').focus(), 50);
       };
 
       if (window._chatTabPending) {
