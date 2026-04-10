@@ -58,25 +58,35 @@ permalink: /index.html
                       <div class="panel-header">&#9670; Changelog</div>
                       <div class="panel-body">
                           <div class="changelog">
+                            <div class="log-entry">
+                            <div class="log-date">April 9, 2026</div>
+                            <div class="log-title">Fixed chat/added moderation</div>
+                            <div class="log-desc">So turns out yall like bad words too much so there banned now ~ Itz_Kire</div>
+                            <span class="tag tag-fix">Fix</span>
+                          </div>
                              <div class="log-entry">
                                   <div class="log-date">April 6, 2026</div>
                                   <div class="log-title">added cdn switch</div>
                                   <div class="log-desc">githack gets blocked at some schools so we have multiple cdn's to fetch from! ~ aj</div>
+                                  <span class="tag tag-new">New</span>
                               </div>
                             <div class="log-entry">
                                   <div class="log-date">April 5, 2026</div>
                                   <div class="log-title">added more ports</div>
                                   <div class="log-desc">yeah uh some more web ports are on the site, go have fun - aj</div>
+                                  <span class="tag tag-new">New</span>
                               </div>
                               <div class="log-entry">
                                   <div class="log-date">April 4, 2026</div>
                                   <div class="log-title">Added: Shop</div>
                                   <div class="log-desc">There is now a shop, albeit its not a shop, and it doesn't work yet</div>
+                                  <span class="tag tag-new">New</span>
                               </div>
                               <div class="log-entry">
                                     <div class="log-date">April 3, 2026</div>
                                   <div class="log-title">Added: GAMES</div>
                                   <div class="log-desc">Play your favorite games on wavelength!</div>
+                                  <span class="tag tag-new">New</span>
                               </div>
                           </div>
                       </div>
@@ -379,7 +389,7 @@ permalink: /index.html
         document.getElementById('chat-messages').appendChild(el);
       }
 
-      // Load bad words list once
+      // Load bad words list
       let badWords = [];
       fetch('./assets/badwords.txt')
         .then(r => r.text())
@@ -426,8 +436,6 @@ permalink: /index.html
         window.openChatTab();
       };
 
-      // Module is now ready — if the user already clicked chat before
-      // the module finished loading, open it now
       if (window._chatTabPending) {
         window._chatTabPending = false;
         window.openChatTab();
