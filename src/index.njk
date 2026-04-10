@@ -30,6 +30,7 @@ permalink: /index.html
             <button class="tab active" onclick="switchTab('home', event)">[ home ]</button>
             <button class="tab" onclick="switchTab('games', event)">[ games ]</button>
             <button class="tab" onclick="switchTab('chat', event)">[ chat ]</button>
+          <button class="tab" onclick="switchTab('users', event)">[ users ]</button>
             <button class="tab" onclick="switchTab('shop', event)">[ shop ]</button>
             <button class="tab" onclick="switchTab('credits', event)">[ credits ]</button>
         </nav>
@@ -191,6 +192,52 @@ permalink: /index.html
 
             </div>
 
+            <!-- USERS -->
+            <div id="tab-users" class="tab-panel">
+              <div class="users-layout">
+                <div class="panel">
+                  <div class="panel-header">&#9670; Account</div>
+                  <div class="panel-body users-auth-body">
+                    <div id="users-auth-status" class="users-auth-status">Not logged in.</div>
+
+                    <div id="users-auth-message" class="users-auth-message"></div>
+
+                    <div id="users-auth-forms">
+                      <div class="users-auth-group">
+                        <label for="users-register-name">Username</label>
+                        <input id="users-register-name" class="chat-input-field" type="text" maxlength="24" placeholder="your_name_here...">
+                      </div>
+                      <div class="users-auth-group">
+                        <label for="users-register-email">Email</label>
+                        <input id="users-register-email" class="chat-input-field" type="email" maxlength="100" placeholder="you@example.com">
+                      </div>
+                      <div class="users-auth-group">
+                        <label for="users-register-password">Password</label>
+                        <input id="users-register-password" class="chat-input-field" type="password" maxlength="72" placeholder="at least 6 characters">
+                      </div>
+                      <div class="users-auth-actions">
+                        <button class="win-btn" onclick="registerUser()">[ REGISTER ]</button>
+                        <button class="win-btn" onclick="loginUser()">[ LOGIN ]</button>
+                      </div>
+                    </div>
+
+                    <div id="users-auth-logged-in" style="display:none;">
+                      <div class="users-auth-hello" id="users-auth-hello"></div>
+                      <button class="win-btn" onclick="logoutUser()">[ LOG OUT ]</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="panel">
+                  <div class="panel-header">&#9670; Registered Users</div>
+                  <div class="panel-body">
+                    <div id="users-list-status" class="users-list-status">Loading users...</div>
+                    <div id="users-list" class="users-list"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- SHOP -->
             <div id="tab-shop" class="tab-panel">
               <div class="panel">
@@ -299,7 +346,8 @@ permalink: /index.html
     <script src="games-loader.js"></script>
     <script>
         // chat tab requested before firebase module was ready
-        let _chatTabPending = false;
+      window._chatTabPending = false;
+      window._usersTabPending = false;
 
         function switchTab(name, e) {
             document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -311,8 +359,15 @@ permalink: /index.html
                     window.openChatTab();
                 } else {
                     // Module not ready yet — flag it so the module calls it when ready
-                    _chatTabPending = true;
+                window._chatTabPending = true;
                 }
+            }
+            if (name === 'users') {
+              if (window.openUsersTab) {
+                window.openUsersTab();
+              } else {
+                window._usersTabPending = true;
+              }
             }
             if (name === 'games') window.onGamesTabVisible?.();
         }
@@ -326,6 +381,9 @@ permalink: /index.html
     <script type="module">
       import { initializeApp }
         from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+      import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+               signOut, onAuthStateChanged }
+        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
       import { getFirestore, collection, addDoc, onSnapshot,
                query, orderBy, limit, deleteDoc, doc, 
                serverTimestamp, getDoc, setDoc }
@@ -333,6 +391,7 @@ permalink: /index.html
       import { firebaseConfig } from './firebase-config.js';
 
       const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
       const db  = getFirestore(app);
 
       let uid = localStorage.getItem('wl_uid');
@@ -340,6 +399,141 @@ permalink: /index.html
 
       let currentUser = null;
       let chatStarted = false;
+      let currentAccount = null;
+      let usersListStarted = false;
+
+      function setUsersMessage(text, isError = false) {
+        const el = document.getElementById('users-auth-message');
+        el.textContent = text || '';
+        el.classList.toggle('users-auth-message-error', isError);
+      }
+
+      function setUsersAuthUI(isLoggedIn) {
+        document.getElementById('users-auth-forms').style.display = isLoggedIn ? 'none' : 'block';
+        document.getElementById('users-auth-logged-in').style.display = isLoggedIn ? 'block' : 'none';
+      }
+
+      function renderUsersList(docs) {
+        const list = document.getElementById('users-list');
+        const status = document.getElementById('users-list-status');
+
+        if (!docs.length) {
+          list.innerHTML = '';
+          status.textContent = 'No registered users yet.';
+          return;
+        }
+
+        status.textContent = `${docs.length} registered user${docs.length === 1 ? '' : 's'}`;
+        list.innerHTML = docs.map((d, i) => {
+          const data = d.data();
+          const name = esc(data.username || data.email || 'unknown');
+          const email = esc(data.email || '');
+          return `<div class="users-list-item"><span class="users-list-rank">${i + 1}.</span> <span class="users-list-name">${name}</span><span class="users-list-email">${email ? ` (${email})` : ''}</span></div>`;
+        }).join('');
+      }
+
+      function startUsersListListener() {
+        if (usersListStarted) return;
+        usersListStarted = true;
+
+        const q = query(collection(db, 'accounts'), orderBy('createdAt', 'desc'), limit(200));
+        onSnapshot(q, snap => {
+          const docs = [];
+          snap.forEach(d => docs.push(d));
+          renderUsersList(docs);
+        }, () => {
+          document.getElementById('users-list-status').textContent = 'Could not load users list.';
+        });
+      }
+
+      window.openUsersTab = function () {
+        startUsersListListener();
+        if (!currentAccount) {
+          setTimeout(() => document.getElementById('users-register-name')?.focus(), 50);
+        }
+      };
+
+      window.registerUser = async function () {
+        const username = document.getElementById('users-register-name').value.trim();
+        const email = document.getElementById('users-register-email').value.trim();
+        const password = document.getElementById('users-register-password').value;
+
+        if (!username || username.length < 2) {
+          setUsersMessage('Username must be at least 2 characters.', true);
+          return;
+        }
+        if (!email) {
+          setUsersMessage('Email is required.', true);
+          return;
+        }
+        if (!password || password.length < 6) {
+          setUsersMessage('Password must be at least 6 characters.', true);
+          return;
+        }
+
+        try {
+          const cred = await createUserWithEmailAndPassword(auth, email, password);
+          await setDoc(doc(db, 'accounts', cred.user.uid), {
+            uid: cred.user.uid,
+            username,
+            email,
+            createdAt: serverTimestamp()
+          }, { merge: true });
+          setUsersMessage('Account created. You are now logged in.');
+        } catch (err) {
+          setUsersMessage(err?.message || 'Registration failed.', true);
+        }
+      };
+
+      window.loginUser = async function () {
+        const email = document.getElementById('users-register-email').value.trim();
+        const password = document.getElementById('users-register-password').value;
+
+        if (!email || !password) {
+          setUsersMessage('Enter your email and password to log in.', true);
+          return;
+        }
+
+        try {
+          await signInWithEmailAndPassword(auth, email, password);
+          setUsersMessage('Logged in successfully.');
+        } catch (err) {
+          setUsersMessage(err?.message || 'Login failed.', true);
+        }
+      };
+
+      window.logoutUser = async function () {
+        try {
+          await signOut(auth);
+          setUsersMessage('Logged out.');
+        } catch (err) {
+          setUsersMessage(err?.message || 'Logout failed.', true);
+        }
+      };
+
+      onAuthStateChanged(auth, async user => {
+        currentAccount = user || null;
+        const statusEl = document.getElementById('users-auth-status');
+        const helloEl = document.getElementById('users-auth-hello');
+
+        if (!statusEl || !helloEl) return;
+
+        if (!user) {
+          statusEl.textContent = 'Not logged in.';
+          helloEl.textContent = '';
+          setUsersAuthUI(false);
+          return;
+        }
+
+        const accountRef = doc(db, 'accounts', user.uid);
+        const snap = await getDoc(accountRef);
+        const data = snap.exists() ? snap.data() : {};
+        const username = data.username || user.email || 'user';
+
+        statusEl.textContent = `Logged in as ${username}`;
+        helloEl.textContent = `Welcome back, ${username}.`;
+        setUsersAuthUI(true);
+      });
 
       window.openChatTab = async function () {
         const saved = localStorage.getItem('wl_username');
@@ -508,6 +702,10 @@ permalink: /index.html
       if (window._chatTabPending) {
         window._chatTabPending = false;
         window.openChatTab();
+      }
+      if (window._usersTabPending) {
+        window._usersTabPending = false;
+        window.openUsersTab();
       }
     </script>
 
