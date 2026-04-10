@@ -347,14 +347,19 @@ permalink: /index.html
         if (!chatStarted) { startListener(); chatStarted = true; }
       }
 
-      const q = query(collection(db, 'messages'), orderBy('time', 'desc'), limit(100));
-      onSnapshot(q, snap => {
-        const docs = [];
-        snap.forEach(d => docs.push(d));
-        docs.reverse(); // flip back to oldest-first for display
-        docs.forEach(d => renderMessage(d));
-        box.scrollTop = box.scrollHeight;
-      });
+      function startListener () {
+        // Fetch last 100 messages by ordering descending, then reverse for display
+        const q = query(collection(db, 'messages'), orderBy('time', 'desc'), limit(100));
+        onSnapshot(q, snap => {
+          const box = document.getElementById('chat-messages');
+          box.innerHTML = '';
+          const docs = [];
+          snap.forEach(d => docs.push(d));
+          docs.reverse(); // oldest first for display
+          docs.forEach(d => renderMessage(d));
+          box.scrollTop = box.scrollHeight;
+        });
+      }
 
       function renderMessage (docSnap) {
         const data   = docSnap.data();
@@ -374,6 +379,25 @@ permalink: /index.html
         document.getElementById('chat-messages').appendChild(el);
       }
 
+      // Load bad words list once
+      let badWords = [];
+      fetch('./assets/badwords.txt')
+        .then(r => r.text())
+        .then(t => {
+          badWords = t.split('\n').map(w => w.trim().toLowerCase()).filter(Boolean);
+        });
+
+      function filterText(text) {
+        let filtered = text;
+        for (const word of badWords) {
+          if (!word) continue;
+          const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const regex = new RegExp(`(?<![a-z])${escaped}(?![a-z])`, 'gi');
+          filtered = filtered.replace(regex, m => '*'.repeat(m.length));
+        }
+        return filtered;
+      }
+
       window.sendMessage = async function () {
         const input = document.getElementById('chat-msg-input');
         const text  = input.value.trim();
@@ -382,7 +406,7 @@ permalink: /index.html
         await addDoc(collection(db, 'messages'), {
           user: currentUser,
           uid,
-          text,
+          text: filterText(text),
           time: serverTimestamp()
         });
       };
