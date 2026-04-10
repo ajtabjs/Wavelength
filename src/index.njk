@@ -176,6 +176,8 @@ permalink: /index.html
                 <div class="panel">
                   <div class="panel-header">
                     &#9670; Chat &nbsp;<span id="chat-user-label" style="font-weight:normal;font-size:10px;opacity:0.85;"></span>
+                    <span id="chat-link-status" style="font-weight:normal;font-size:10px;opacity:0.85;margin-left:8px;"></span>
+                    <button id="chat-link-btn" onclick="linkChatToAccount()" class="win-btn" style="display:none;font-size:9px; margin-left:10px; padding: 2px 5px;">[ LINK ACCOUNT ]</button>
                     <button onclick="changeUsername()" class="win-btn" style="font-size:9px; margin-left:10px; padding: 2px 5px;">[ CHANGE NAME ]</button>
                   </div>
                   <div class="panel-body" style="padding:0;display:flex;flex-direction:column;height:68vh;">
@@ -413,6 +415,42 @@ permalink: /index.html
         document.getElementById('users-auth-logged-in').style.display = isLoggedIn ? 'block' : 'none';
       }
 
+      async function updateChatLinkUI() {
+        const linkStatus = document.getElementById('chat-link-status');
+        const linkBtn = document.getElementById('chat-link-btn');
+        if (!linkStatus || !linkBtn) return;
+
+        if (!currentUser) {
+          linkStatus.textContent = '';
+          linkBtn.style.display = 'none';
+          return;
+        }
+
+        if (!currentAccount) {
+          linkStatus.textContent = '[ not linked ]';
+          linkBtn.style.display = 'none';
+          return;
+        }
+
+        try {
+          const nameRef = doc(db, 'usernames', currentUser.toLowerCase());
+          const snap = await getDoc(nameRef);
+          const linkedUid = snap.exists() ? snap.data().authUid : null;
+          const isLinked = linkedUid === currentAccount.uid;
+
+          if (isLinked) {
+            linkStatus.textContent = '[ linked to account ]';
+            linkBtn.style.display = 'none';
+          } else {
+            linkStatus.textContent = '[ not linked ]';
+            linkBtn.style.display = 'inline-block';
+          }
+        } catch {
+          linkStatus.textContent = '[ link status unavailable ]';
+          linkBtn.style.display = 'none';
+        }
+      }
+
       function renderUsersList(docs) {
         const list = document.getElementById('users-list');
         const status = document.getElementById('users-list-status');
@@ -480,6 +518,7 @@ permalink: /index.html
             createdAt: serverTimestamp()
           }, { merge: true });
           setUsersMessage('Account created. You are now logged in.');
+          await updateChatLinkUI();
         } catch (err) {
           setUsersMessage(err?.message || 'Registration failed.', true);
         }
@@ -497,6 +536,7 @@ permalink: /index.html
         try {
           await signInWithEmailAndPassword(auth, email, password);
           setUsersMessage('Logged in successfully.');
+          await updateChatLinkUI();
         } catch (err) {
           setUsersMessage(err?.message || 'Login failed.', true);
         }
@@ -506,8 +546,41 @@ permalink: /index.html
         try {
           await signOut(auth);
           setUsersMessage('Logged out.');
+          await updateChatLinkUI();
         } catch (err) {
           setUsersMessage(err?.message || 'Logout failed.', true);
+        }
+      };
+
+      window.linkChatToAccount = async function () {
+        if (!currentUser) {
+          setUsersMessage('Pick a chat username first.', true);
+          return;
+        }
+        if (!currentAccount) {
+          setUsersMessage('Log in from the users tab, then link your chat username.', true);
+          return;
+        }
+
+        try {
+          const nameRef = doc(db, 'usernames', currentUser.toLowerCase());
+          const snap = await getDoc(nameRef);
+          if (!snap.exists()) {
+            setUsersMessage('Chat username record not found.', true);
+            return;
+          }
+
+          const data = snap.data();
+          if (data.uid !== uid) {
+            setUsersMessage('You can only link your own active chat username.', true);
+            return;
+          }
+
+          await setDoc(nameRef, { authUid: currentAccount.uid }, { merge: true });
+          setUsersMessage(`Linked chat username ${currentUser} to your account.`);
+          await updateChatLinkUI();
+        } catch (err) {
+          setUsersMessage(err?.message || 'Could not link chat username.', true);
         }
       };
 
@@ -522,6 +595,7 @@ permalink: /index.html
           statusEl.textContent = 'Not logged in.';
           helloEl.textContent = '';
           setUsersAuthUI(false);
+          await updateChatLinkUI();
           return;
         }
 
@@ -533,6 +607,7 @@ permalink: /index.html
         statusEl.textContent = `Logged in as ${username}`;
         helloEl.textContent = `Welcome back, ${username}.`;
         setUsersAuthUI(true);
+        await updateChatLinkUI();
       });
 
       window.openChatTab = async function () {
@@ -541,8 +616,11 @@ permalink: /index.html
           const nameRef = doc(db, 'usernames', saved.toLowerCase());
           const snap = await getDoc(nameRef);
           // If the name exists and belongs to us, or doesn't exist yet, re-claim it
-          if (!snap.exists() || snap.data().uid === uid) {
-            await setDoc(nameRef, { uid, name: saved });
+          const canClaimByLink = snap.exists() && currentAccount && snap.data().authUid === currentAccount.uid;
+          if (!snap.exists() || snap.data().uid === uid || canClaimByLink) {
+            const payload = { uid, name: saved };
+            if (currentAccount) payload.authUid = currentAccount.uid;
+            await setDoc(nameRef, payload, { merge: true });
             currentUser = saved;
             showChatUI();
             return;
@@ -563,12 +641,15 @@ permalink: /index.html
         const nameRef = doc(db, 'usernames', name.toLowerCase());
         const snap = await getDoc(nameRef);
 
-        if (snap.exists() && snap.data().uid !== uid) {
+        const canClaimByLink = snap.exists() && currentAccount && snap.data().authUid === currentAccount.uid;
+        if (snap.exists() && snap.data().uid !== uid && !canClaimByLink) {
           errorEl.textContent = '✕ that name is taken, choose another.';
           return;
         }
 
-        await setDoc(nameRef, { uid, name });
+        const payload = { uid, name };
+        if (currentAccount) payload.authUid = currentAccount.uid;
+        await setDoc(nameRef, payload, { merge: true });
         currentUser = name;
         localStorage.setItem('wl_username', name);
         document.getElementById('username-modal').style.display = 'none';
@@ -579,6 +660,7 @@ permalink: /index.html
       function showChatUI () {
         document.getElementById('chat-ui').style.display = 'block';
         document.getElementById('chat-user-label').textContent = '[ logged in as: ' + currentUser + ' ]';
+        updateChatLinkUI();
         if (!chatStarted) { startListener(); chatStarted = true; }
       }
 
@@ -693,6 +775,8 @@ permalink: /index.html
         currentUser = null;
         localStorage.removeItem('wl_username');
         document.getElementById('chat-ui').style.display = 'none';
+        document.getElementById('chat-link-status').textContent = '';
+        document.getElementById('chat-link-btn').style.display = 'none';
         document.getElementById('username-input').value = '';
         document.getElementById('username-error').textContent = '';
         document.getElementById('username-modal').style.display = 'flex';
