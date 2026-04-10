@@ -279,12 +279,22 @@ permalink: /index.html
 
     <script src="games-loader.js"></script>
     <script>
+        // chat tab requested before firebase module was ready
+        let _chatTabPending = false;
+
         function switchTab(name, e) {
             document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.getElementById('tab-' + name).classList.add('active');
             if (e && e.target) e.target.classList.add('active');
-            if (name === 'chat') window.openChatTab?.();
+            if (name === 'chat') {
+                if (window.openChatTab) {
+                    window.openChatTab();
+                } else {
+                    // Module not ready yet — flag it so the module calls it when ready
+                    _chatTabPending = true;
+                }
+            }
             if (name === 'games') window.onGamesTabVisible?.();
         }
 
@@ -304,8 +314,7 @@ permalink: /index.html
 
       const app = initializeApp(firebaseConfig);
       const db  = getFirestore(app);
-      window.__db = db;
-      
+
       let uid = localStorage.getItem('wl_uid');
       if (!uid) { uid = crypto.randomUUID(); localStorage.setItem('wl_uid', uid); }
 
@@ -393,6 +402,13 @@ permalink: /index.html
         document.getElementById('chat-ui').style.display = 'none';
         window.openChatTab();
       };
+
+      // Module is now ready — if the user already clicked chat before
+      // the module finished loading, open it now
+      if (window._chatTabPending) {
+        window._chatTabPending = false;
+        window.openChatTab();
+      }
     </script>
 
 </body>
