@@ -355,6 +355,32 @@ permalink: /index.html
         document.getElementById('chat-ui').style.display = 'block';
         document.getElementById('chat-user-label').textContent = '[ logged in as: ' + currentUser + ' ]';
         if (!chatStarted) { startListener(); chatStarted = true; }
+        startSendCooldown();
+      }
+
+      // Run this once when chat UI loads, and then every time a message is sent to prevent spam
+      function startSendCooldown() {
+        const input = document.getElementById('chat-msg-input');
+        const btn = document.querySelector('.chat-footer .win-btn');
+        const original = input.placeholder;
+
+        input.disabled = true;
+        btn.disabled = true;
+
+        let remaining = 5;
+        input.placeholder = `wait ${remaining}s before sending...`;
+
+        const interval = setInterval(() => {
+          remaining--;
+          if (remaining <= 0) {
+            clearInterval(interval);
+            input.disabled = false;
+            btn.disabled = false;
+            input.placeholder = original;
+          } else {
+            input.placeholder = `wait ${remaining}s before sending...`;
+          }
+        }, 1000);
       }
 
       function startListener () {
@@ -407,8 +433,11 @@ permalink: /index.html
         }
         return filtered;
       }
-
+      
+      const CHAT_READY_TIME = Date.now() + 5000; // 5000 milliseconds or 5 seconds to be frank
       window.sendMessage = async function () {
+        if (Date.now() < CHAT_READY_TIME) return; // Staying in cooldown
+
         const input = document.getElementById('chat-msg-input');
         const text  = input.value.trim();
         if (!text || !currentUser) return;
