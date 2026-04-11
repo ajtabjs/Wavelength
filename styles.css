@@ -79,6 +79,10 @@ body {
     gap: 2px;
 }
 
+.window-buttons a {
+    text-decoration: none;
+}
+
 .window-buttons button {
     width: 16px;
     height: 14px;
@@ -88,7 +92,6 @@ body {
     background: #c0c0c0;
     cursor: pointer;
     padding: 0;
-    color: white;
 }
 
 .tabs {
@@ -251,10 +254,32 @@ body {
     z-index: 200;
 }
 .modal-box {
+    position: relative;
     background: #c0c0c0;
     border: 3px solid;
     border-color: #fff #808080 #808080 #fff;
     min-width: 260px;
+}
+
+.modal-close-btn {
+    position: absolute;
+    top: 5px;
+    right: 6px;
+    width: 16px;
+    height: 14px;
+    font-size: 10px;
+    border: 1px solid;
+    border-color: #ffffff #808080 #808080 #ffffff;
+    background: #c0c0c0;
+    color: #000;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    z-index: 1;
+}
+
+.modal-close-btn:active {
+    border-color: #808080 #fff #fff #808080;
 }
 
 .chat-messages {
