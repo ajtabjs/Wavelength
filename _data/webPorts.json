@@ -447,5 +447,12 @@
     "path": "mfr/index.html",
     "thumbnail": "../no.png",
     "description": ""
+  },
+   {
+    "name": "Terraria 1.4.4",
+    "slug": "terraria",
+    "path": "terraria1.4.4/index.html",
+    "thumbnail": "webp/ter.webp",
+    "description": ""
   }
 ]
