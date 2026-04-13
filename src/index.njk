@@ -775,13 +775,8 @@ permalink: /index.html
             await loadProfileByUsername(profile.username);
           });
 
-          const username = document.createElement('span');
-          username.className = 'users-list-name';
-          username.textContent = ` @${profile.username}`;
-
           row.appendChild(rank);
           row.appendChild(link);
-          row.appendChild(username);
           list.appendChild(row);
         });
       }
