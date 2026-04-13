@@ -545,9 +545,9 @@ permalink: /index.html
       let badgeDefinitions = new Map();
       let userBadgesByUsernameLower = new Map();
       let currentUserCanModerateChat = false;
+      let currentUserIsFirestoreAdmin = false;
       let currentTimeoutUntilMs = 0;
       let chatTimeoutUnsubscribe = null;
-      const chatAdminBadgeIds = new Set(['administrator', 'admin', 'co-owner']);
       const embeddedBadgeConfig = {{ profileBadges | dump | safe }};
 
       function setUsersMessage(text, isError = false) {
@@ -665,15 +665,20 @@ permalink: /index.html
         return ids.map((id) => badgeDefinitions.get(id)).filter(Boolean);
       }
 
-      function userCanModerateChat(username) {
-        const ids = userBadgesByUsernameLower.get(normalizeUsername(username)) || [];
-        return ids.some((id) => {
-          if (chatAdminBadgeIds.has(id)) return true;
-          const badge = badgeDefinitions.get(id);
-          const label = String(badge?.label || '').toLowerCase();
-          const title = String(badge?.title || '').toLowerCase();
-          return /\badministrator\b|\badmin\b/.test(`${label} ${title}`);
-        });
+      async function refreshFirestoreAdminStatus() {
+        if (!currentAccount?.uid) {
+          currentUserIsFirestoreAdmin = false;
+          return;
+        }
+
+        try {
+          const adminSnap = await getDoc(doc(db, 'admins', currentAccount.uid));
+          currentUserIsFirestoreAdmin = adminSnap.exists();
+        } catch {
+          currentUserIsFirestoreAdmin = false;
+        }
+
+        currentUserCanModerateChat = currentUserIsFirestoreAdmin;
       }
 
       function chatTimeoutLabel(untilMs) {
@@ -1336,9 +1341,15 @@ permalink: /index.html
         if (!statusEl || !helloEl) return;
 
         if (!user) {
+          currentUserIsFirestoreAdmin = false;
+          currentUserCanModerateChat = false;
           statusEl.textContent = 'Not logged in.';
           helloEl.textContent = '';
           setUsersAuthUI(false);
+          if (currentUser) {
+            const timeoutBtn = document.getElementById('chat-timeout-btn');
+            if (timeoutBtn) timeoutBtn.style.display = 'none';
+          }
           await updateChatLinkUI();
           return;
         }
@@ -1360,6 +1371,10 @@ permalink: /index.html
         statusEl.textContent = `Logged in as ${displayName}`;
         helloEl.textContent = `Welcome back, ${displayName}.`;
         setUsersAuthUI(true);
+        await refreshFirestoreAdminStatus();
+        if (currentUser) {
+          await showChatUI();
+        }
         await updateChatLinkUI();
       });
 
@@ -1412,7 +1427,7 @@ permalink: /index.html
 
       async function showChatUI () {
         await ensureBadgeConfigLoaded();
-        currentUserCanModerateChat = userCanModerateChat(currentUser);
+        await refreshFirestoreAdminStatus();
         document.getElementById('chat-ui').style.display = 'block';
         document.getElementById('chat-user-label').textContent = '[ logged in as: ' + currentUser + ' ]';
         const timeoutBtn = document.getElementById('chat-timeout-btn');
