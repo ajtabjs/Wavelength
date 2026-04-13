@@ -11,6 +11,7 @@ module.exports = function(eleventyConfig) {
   // Make data available globally
   eleventyConfig.addGlobalData("baseUrls", require("./_data/baseUrls.json"));
   eleventyConfig.addGlobalData("creditsMapping", require("./_data/creditsMapping.json"));
+  eleventyConfig.addGlobalData("profileBadges", require("./_data/profile-badges.json"));
 
   return {
     dir: {

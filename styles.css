@@ -427,6 +427,12 @@ body {
     resize: vertical;
 }
 
+.users-profile-hint {
+    margin-top: 4px;
+    font-size: 10px;
+    color: #444;
+}
+
 .users-list-status {
     font-size: 11px;
     color: #444;
@@ -447,6 +453,10 @@ body {
     padding: 3px 0;
     border-bottom: 1px dotted #ddd;
     line-height: 1.5;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
 }
 
 .users-list-rank {
@@ -463,6 +473,36 @@ body {
     color: #000080;
     font-weight: bold;
     text-decoration: underline;
+}
+
+.users-list-badges {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.users-list-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 18px;
+    height: 18px;
+    border: 1px solid #808080;
+    background: #f3f3f3;
+    cursor: help;
+}
+
+.users-list-badge-img {
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
+}
+
+.users-list-badge-text {
+    font-size: 9px;
+    line-height: 1;
+    padding: 0 2px;
 }
 
 .users-list-email {
@@ -490,6 +530,44 @@ body {
     margin-bottom: 10px;
 }
 
+.profile-identity-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.profile-avatar-wrap {
+    width: 64px;
+    height: 64px;
+    border: 2px solid;
+    border-color: #808080 #fff #fff #808080;
+    background: #fff;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.profile-avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+}
+
+.profile-avatar-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: bold;
+    color: #000080;
+    background: linear-gradient(180deg, #ececec 0%, #d8d8d8 100%);
+}
+
 .profile-display-name {
     font-size: 18px;
     font-weight: bold;
@@ -505,6 +583,68 @@ body {
     font-size: 11px;
     color: #000080;
     font-weight: bold;
+}
+
+.profile-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 5px;
+}
+
+.profile-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    min-width: 22px;
+    height: 22px;
+    padding: 2px;
+    border: 1px solid #808080;
+    background: #f0f0f0;
+    cursor: help;
+}
+
+.users-list-badge::after,
+.profile-badge::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 6px);
+    transform: translateX(-50%);
+    border: 1px solid #808080;
+    background: #ffffe1;
+    color: #111;
+    padding: 4px 6px;
+    font-size: 10px;
+    line-height: 1.2;
+    white-space: nowrap;
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.12s ease;
+    z-index: 20;
+}
+
+.users-list-badge:hover::after,
+.users-list-badge:focus-visible::after,
+.profile-badge:hover::after,
+.profile-badge:focus-visible::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+.profile-badge-img {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+}
+
+.profile-badge-text {
+    font-size: 9px;
+    line-height: 1;
+    padding: 0 3px;
 }
 
 .profile-bio {
@@ -557,6 +697,9 @@ body {
     .profile-card-header {
         flex-direction: column;
         align-items: flex-start;
+    }
+    .profile-identity-wrap {
+        width: 100%;
     }
     .profile-song-player {
         height: 180px;

@@ -273,6 +273,12 @@ permalink: /index.html
                       </div>
 
                       <div class="users-auth-group">
+                        <label for="profile-image-url">Profile image URL (requires approval)</label>
+                        <input id="profile-image-url" class="chat-input-field" type="url" maxlength="500" placeholder="https://example.com/avatar.png">
+                        <div id="profile-image-request-status" class="users-profile-hint"></div>
+                      </div>
+
+                      <div class="users-auth-group">
                         <label for="profile-bio">Bio / About</label>
                         <textarea id="profile-bio" class="users-profile-textarea" maxlength="280" placeholder="write something about yourself..."></textarea>
                       </div>
@@ -304,12 +310,21 @@ permalink: /index.html
                   <div id="profile-view" class="profile-view" style="display:none;">
                     <div class="profile-card">
                       <div class="profile-card-header">
-                        <div>
-                          <div class="profile-display-name" id="profile-display-name-view">Unknown</div>
-                          <div class="profile-username" id="profile-username-view">@unknown</div>
+                        <div class="profile-identity-wrap">
+                          <div class="profile-avatar-wrap" aria-hidden="true">
+                            <img id="profile-avatar-view" class="profile-avatar" alt="Profile avatar">
+                            <div id="profile-avatar-fallback" class="profile-avatar-fallback">?</div>
+                          </div>
+                          <div>
+                            <div class="profile-display-name" id="profile-display-name-view">Unknown</div>
+                            <div class="profile-username" id="profile-username-view">@unknown</div>
+                            <div class="profile-badges" id="profile-badges-view"></div>
+                          </div>
                         </div>
                         <div class="profile-pronouns" id="profile-pronouns-view"></div>
                       </div>
+
+                      <div id="profile-image-note-view" class="users-profile-hint" style="display:none;"></div>
 
                       <div class="profile-bio" id="profile-bio-view"></div>
 
@@ -520,6 +535,10 @@ permalink: /index.html
       let usersListStarted = false;
       let usersByUsernameLower = new Map();
       let currentProfileUsername = '';
+      let latestUsersListDocs = [];
+      let badgeDefinitions = new Map();
+      let userBadgesByUsernameLower = new Map();
+      const embeddedBadgeConfig = {{ profileBadges | dump | safe }};
 
       function setUsersMessage(text, isError = false) {
         const el = document.getElementById('users-auth-message');
@@ -545,6 +564,127 @@ permalink: /index.html
 
       function normalizeUsername(value) {
         return String(value || '').trim().toLowerCase();
+      }
+
+      function normalizeHttpUrl(value) {
+        if (!value) return '';
+        try {
+          const parsed = new URL(String(value).trim());
+          if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return '';
+          return parsed.toString();
+        } catch {
+          return '';
+        }
+      }
+
+      function initialsForProfile(profile) {
+        const source = String(profile.displayName || profile.username || '?').trim();
+        if (!source) return '?';
+        const parts = source.split(/\s+/).filter(Boolean);
+        if (parts.length >= 2) {
+          return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+        }
+        return source.slice(0, 2).toUpperCase();
+      }
+
+      function profileImageHintFromStatus(profile) {
+        if (profile.profileImageStatus === 'pending') {
+          return 'Profile image update request is pending approval.';
+        }
+        if (profile.profileImageStatus === 'rejected') {
+          return 'Last profile image request was not approved.';
+        }
+        if (profile.profileImageStatus === 'approved' && profile.profileImageUrl) {
+          return 'Current profile image is approved and visible.';
+        }
+        return 'No custom profile image submitted yet.';
+      }
+
+      function normalizeBadgeImagePath(value) {
+        const raw = String(value || '').trim();
+        if (!raw) return '';
+        if (/^https?:\/\//i.test(raw)) return raw;
+        if (raw.startsWith('./')) return raw;
+        if (raw.startsWith('/')) return `.${raw}`;
+        return `./${raw}`;
+      }
+
+      function normalizeBadgeConfig(rawConfig) {
+        const defs = new Map();
+        const userMap = new Map();
+        const badges = Array.isArray(rawConfig?.badges) ? rawConfig.badges : [];
+        const assignments = rawConfig?.users && typeof rawConfig.users === 'object' ? rawConfig.users : {};
+
+        badges.forEach((item) => {
+          const id = normalizeUsername(item?.id);
+          if (!id) return;
+          defs.set(id, {
+            id,
+            label: String(item?.label || id).trim(),
+            image: normalizeBadgeImagePath(item?.image || ''),
+            title: String(item?.title || item?.label || id).trim()
+          });
+        });
+
+        Object.entries(assignments).forEach(([username, badgeIds]) => {
+          const normalizedUser = normalizeUsername(username);
+          if (!normalizedUser || !Array.isArray(badgeIds)) return;
+          const normalizedIds = badgeIds
+            .map((id) => normalizeUsername(id))
+            .filter((id) => defs.has(id));
+          if (normalizedIds.length) {
+            userMap.set(normalizedUser, normalizedIds);
+          }
+        });
+
+        badgeDefinitions = defs;
+        userBadgesByUsernameLower = userMap;
+      }
+
+      async function ensureBadgeConfigLoaded() {
+        if (badgeDefinitions.size > 0 || userBadgesByUsernameLower.size > 0) return;
+        try {
+          normalizeBadgeConfig(embeddedBadgeConfig || {});
+        } catch {
+          // Keep default empty config when badge metadata cannot be loaded.
+        }
+      }
+
+      function badgesForUsername(username) {
+        const ids = userBadgesByUsernameLower.get(normalizeUsername(username)) || [];
+        return ids.map((id) => badgeDefinitions.get(id)).filter(Boolean);
+      }
+
+      function buildBadgeElement(badge, className = 'profile-badge') {
+        const el = document.createElement('span');
+        el.className = className;
+        el.title = badge.title;
+        el.dataset.tooltip = badge.title;
+        el.setAttribute('aria-label', badge.title);
+        el.tabIndex = 0;
+
+        if (badge.image) {
+          const img = document.createElement('img');
+          img.className = `${className}-img`;
+          img.src = badge.image;
+          img.alt = badge.label;
+          img.loading = 'lazy';
+          img.addEventListener('error', () => {
+            img.remove();
+            const text = document.createElement('span');
+            text.className = `${className}-text`;
+            text.textContent = badge.label;
+            el.appendChild(text);
+          });
+          el.appendChild(img);
+        } else {
+          const text = document.createElement('span');
+          text.className = `${className}-text`;
+          text.textContent = badge.label;
+          el.appendChild(text);
+        }
+
+        return el;
       }
 
       function youtubeEmbedUrl(songUrl) {
@@ -586,13 +726,28 @@ permalink: /index.html
         const bio = String(data.bio || '').trim();
         const pronouns = String(data.pronouns || '').trim();
         const songUrl = String(data.songUrl || '').trim();
+        const profileImageUrl = normalizeHttpUrl(data.profileImageUrl || '');
+        const profileImageRequestedUrl = normalizeHttpUrl(data.profileImageRequestedUrl || '');
+        const rawProfileImageStatus = String(data.profileImageStatus || '').trim().toLowerCase();
+        let profileImageStatus = 'none';
+        if (rawProfileImageStatus === 'approved' && profileImageUrl) {
+          profileImageStatus = 'approved';
+        } else if (rawProfileImageStatus === 'pending' && profileImageRequestedUrl) {
+          profileImageStatus = 'pending';
+        } else if (rawProfileImageStatus === 'rejected') {
+          profileImageStatus = 'rejected';
+        }
+
         return {
           username,
           usernameLower: normalizeUsername(data.usernameLower || username),
           displayName,
           bio,
           pronouns,
-          songUrl
+          songUrl,
+          profileImageUrl,
+          profileImageRequestedUrl,
+          profileImageStatus
         };
       }
 
@@ -618,14 +773,44 @@ permalink: /index.html
         const links = document.getElementById('profile-links');
         const songWrap = document.getElementById('profile-song-player-wrap');
         const songPlayer = document.getElementById('profile-song-player');
+        const avatar = document.getElementById('profile-avatar-view');
+        const avatarFallback = document.getElementById('profile-avatar-fallback');
+        const badgesWrap = document.getElementById('profile-badges-view');
+        const imageNote = document.getElementById('profile-image-note-view');
 
-        if (!view || !links || !songWrap || !songPlayer) return;
+        if (!view || !links || !songWrap || !songPlayer || !avatar || !avatarFallback || !badgesWrap || !imageNote) return;
 
         document.getElementById('profile-display-name-view').textContent = profile.displayName;
         document.getElementById('profile-username-view').textContent = `@${profile.username}`;
         document.getElementById('profile-pronouns-view').textContent = profile.pronouns ? `[ ${profile.pronouns} ]` : '';
         document.getElementById('profile-bio-view').textContent = profile.bio || 'No bio yet.';
         currentProfileUsername = profile.username;
+
+        avatarFallback.textContent = initialsForProfile(profile);
+        if (profile.profileImageUrl) {
+          avatar.src = profile.profileImageUrl;
+          avatar.style.display = 'block';
+          avatarFallback.style.display = 'none';
+          avatar.onerror = () => {
+            avatar.removeAttribute('src');
+            avatar.style.display = 'none';
+            avatarFallback.style.display = 'flex';
+          };
+        } else {
+          avatar.removeAttribute('src');
+          avatar.style.display = 'none';
+          avatarFallback.style.display = 'flex';
+        }
+
+        badgesWrap.innerHTML = '';
+        const badges = badgesForUsername(profile.username);
+        badges.forEach((badge) => {
+          badgesWrap.appendChild(buildBadgeElement(badge, 'profile-badge'));
+        });
+
+        const imageHint = profileImageHintFromStatus(profile);
+        imageNote.textContent = imageHint;
+        imageNote.style.display = imageHint ? 'block' : 'none';
 
         links.innerHTML = '';
         const profileLink = document.createElement('a');
@@ -701,6 +886,8 @@ permalink: /index.html
         document.getElementById('profile-display-name').value = profile.displayName || '';
         document.getElementById('profile-pronouns').value = profile.pronouns || '';
         document.getElementById('profile-song-url').value = profile.songUrl || '';
+        document.getElementById('profile-image-url').value = profile.profileImageRequestedUrl || profile.profileImageUrl || '';
+        document.getElementById('profile-image-request-status').textContent = profileImageHintFromStatus(profile);
         document.getElementById('profile-bio').value = profile.bio || '';
       }
 
@@ -741,6 +928,7 @@ permalink: /index.html
 }
 
       function renderUsersList(docs) {
+        latestUsersListDocs = docs;
         const list = document.getElementById('users-list');
         const status = document.getElementById('users-list-status');
         usersByUsernameLower = new Map();
@@ -775,8 +963,19 @@ permalink: /index.html
             await loadProfileByUsername(profile.username);
           });
 
+          const badges = badgesForUsername(profile.username);
           row.appendChild(rank);
           row.appendChild(link);
+
+          if (badges.length) {
+            const badgesWrap = document.createElement('span');
+            badgesWrap.className = 'users-list-badges';
+            badges.forEach((badge) => {
+              badgesWrap.appendChild(buildBadgeElement(badge, 'users-list-badge'));
+            });
+            row.appendChild(badgesWrap);
+          }
+
           list.appendChild(row);
         });
       }
@@ -867,9 +1066,16 @@ permalink: /index.html
         const bio = document.getElementById('profile-bio').value.trim();
         const songUrlInput = document.getElementById('profile-song-url').value.trim();
         const songUrl = normalizeSongUrl(songUrlInput);
+        const profileImageInput = document.getElementById('profile-image-url').value.trim();
+        const requestedImageUrl = normalizeHttpUrl(profileImageInput);
 
         if (songUrlInput && !songUrl) {
           setUsersMessage('Background song must be a valid YouTube URL.', true);
+          return;
+        }
+
+        if (profileImageInput && !requestedImageUrl) {
+          setUsersMessage('Profile image must be a valid http(s) URL.', true);
           return;
         }
 
@@ -883,7 +1089,35 @@ permalink: /index.html
             return;
           }
 
-          await setDoc(accountRef, {
+          const existingApprovedImage = normalizeHttpUrl(existing.profileImageUrl || '');
+          const existingRequestedImage = normalizeHttpUrl(existing.profileImageRequestedUrl || '');
+          let profileImageStatus = String(existing.profileImageStatus || '').trim().toLowerCase();
+          let profileImageUrl = existingApprovedImage;
+          let profileImageRequestedUrl = existingRequestedImage;
+          let isNewImageRequest = false;
+
+          if (requestedImageUrl) {
+            if (requestedImageUrl === existingApprovedImage) {
+              profileImageRequestedUrl = '';
+              profileImageStatus = existingApprovedImage ? 'approved' : 'none';
+            } else {
+              profileImageRequestedUrl = requestedImageUrl;
+              profileImageStatus = 'pending';
+              isNewImageRequest = requestedImageUrl !== existingRequestedImage;
+            }
+          } else if (!existingApprovedImage) {
+            profileImageRequestedUrl = '';
+            profileImageStatus = 'none';
+          }
+
+          if (!profileImageUrl && profileImageStatus === 'approved') {
+            profileImageStatus = 'none';
+          }
+          if (profileImageStatus === 'pending' && !profileImageRequestedUrl) {
+            profileImageStatus = 'none';
+          }
+
+          const updatePayload = {
             uid: currentAccount.uid,
             username,
             usernameLower: normalizeUsername(username),
@@ -891,8 +1125,17 @@ permalink: /index.html
             pronouns,
             bio,
             songUrl,
+            profileImageUrl,
+            profileImageRequestedUrl,
+            profileImageStatus,
             updatedAt: serverTimestamp()
-          }, { merge: true });
+          };
+
+          if (isNewImageRequest) {
+            updatePayload.profileImageRequestedAt = serverTimestamp();
+          }
+
+          await setDoc(accountRef, updatePayload, { merge: true });
 
           const profile = profileFromAccountData({
             ...existing,
@@ -900,7 +1143,10 @@ permalink: /index.html
             displayName: displayName || username,
             pronouns,
             bio,
-            songUrl
+            songUrl,
+            profileImageUrl,
+            profileImageRequestedUrl,
+            profileImageStatus
           });
           usersByUsernameLower.set(profile.usernameLower, profile);
 
@@ -908,7 +1154,11 @@ permalink: /index.html
             renderProfileView(profile);
           }
 
-          setUsersMessage('Profile updated.');
+          if (isNewImageRequest) {
+            setUsersMessage('Profile updated. Image request submitted for approval.');
+          } else {
+            setUsersMessage('Profile updated.');
+          }
           document.getElementById('users-settings').style.display = 'none';
         } catch (err) {
           setUsersMessage(err?.message || 'Could not save profile settings.', true);
@@ -939,6 +1189,9 @@ permalink: /index.html
             bio: '',
             pronouns: '',
             songUrl: '',
+            profileImageUrl: '',
+            profileImageRequestedUrl: '',
+            profileImageStatus: 'none',
             createdAt: serverTimestamp()
           }, { merge: true });
           setUsersMessage('Account created. You are now logged in.');
@@ -1237,6 +1490,18 @@ permalink: /index.html
       }
 
       applyInitialProfileRoute();
+
+      ensureBadgeConfigLoaded().then(() => {
+        if (latestUsersListDocs.length) {
+          renderUsersList(latestUsersListDocs);
+        }
+        if (currentProfileUsername) {
+          const profile = usersByUsernameLower.get(normalizeUsername(currentProfileUsername));
+          if (profile) {
+            renderProfileView(profile);
+          }
+        }
+      });
 
       if (window._chatTabPending) {
         window._chatTabPending = false;

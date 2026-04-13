@@ -1,0 +1,29 @@
+{
+  "badges": [
+    {
+      "id": "moderator",
+      "label": "Moderator",
+      "title": "Moderator",
+      "image": "./assets/badges/users/mod.png"
+    },
+    {
+      "id": "co-owner",
+      "label": "Co-Owner",
+      "title": "Co-Owner",
+      "image": "./assets/badges/users/co-owner.png"
+    },
+    {
+      "id": "well-known",
+      "label": "Well Known",
+      "title": "Well Known Community Member",
+      "image": "./assets/badges/users/well-known.svg"
+    }
+  ],
+  "users": {
+    "aj": ["co-owner"],
+    "thatoneperson": ["co-owner"],
+    "Itz_kire": ["co-owner"],
+    "minodab492": ["co-owner"],
+    "December": ["moderator"]
+  }
+}
