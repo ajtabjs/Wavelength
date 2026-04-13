@@ -459,7 +459,6 @@ body {
 
 .profile-card {
     width: 100%;
-    max-width: 560px;
     border: 2px solid;
     border-color: #808080 #fff #fff #808080;
     background: linear-gradient(180deg, #f8f8f8 0%, #e5e5e5 100%);
