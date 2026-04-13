@@ -384,6 +384,32 @@ body {
     margin-bottom: 8px;
 }
 
+.users-settings {
+    border: 2px solid;
+    border-color: #808080 #fff #fff #808080;
+    background: #efefef;
+    padding: 8px;
+}
+
+.users-settings-title {
+    font-size: 11px;
+    font-weight: bold;
+    color: #000080;
+    margin-bottom: 8px;
+}
+
+.users-profile-textarea {
+    width: 100%;
+    min-height: 88px;
+    font-family: inherit;
+    font-size: 11px;
+    border: 2px solid;
+    border-color: #808080 #fff #fff #808080;
+    background: #fff;
+    padding: 4px 5px;
+    resize: vertical;
+}
+
 .users-list-status {
     font-size: 11px;
     color: #444;
@@ -416,8 +442,93 @@ body {
     font-weight: bold;
 }
 
+.users-list-link {
+    color: #000080;
+    font-weight: bold;
+    text-decoration: underline;
+}
+
 .users-list-email {
     color: #444;
+}
+
+.profile-view {
+    display: flex;
+    justify-content: center;
+}
+
+.profile-card {
+    width: 100%;
+    max-width: 560px;
+    border: 2px solid;
+    border-color: #808080 #fff #fff #808080;
+    background: linear-gradient(180deg, #f8f8f8 0%, #e5e5e5 100%);
+    padding: 12px;
+}
+
+.profile-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.profile-display-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: #000080;
+}
+
+.profile-username {
+    font-size: 11px;
+    color: #444;
+}
+
+.profile-pronouns {
+    font-size: 11px;
+    color: #000080;
+    font-weight: bold;
+}
+
+.profile-bio {
+    border: 2px solid;
+    border-color: #fff #808080 #808080 #fff;
+    background: #fff;
+    padding: 8px;
+    font-size: 12px;
+    min-height: 72px;
+    white-space: pre-wrap;
+}
+
+.profile-links {
+    display: grid;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.profile-link-btn {
+    display: block;
+    text-decoration: none;
+    text-align: center;
+    border: 2px solid;
+    border-color: #fff #808080 #808080 #fff;
+    background: #c0c0c0;
+    color: #000;
+    font-weight: bold;
+    padding: 7px 8px;
+}
+
+.profile-song-player-wrap {
+    margin-top: 10px;
+}
+
+.profile-song-player {
+    width: 100%;
+    height: 210px;
+    border: 2px solid;
+    border-color: #808080 #fff #fff #808080;
+    background: #000;
 }
 
 @media (max-width: 760px) {
@@ -426,6 +537,13 @@ body {
     }
     .users-list {
         max-height: 40vh;
+    }
+    .profile-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .profile-song-player {
+        height: 180px;
     }
 }
 

@@ -27,12 +27,13 @@ permalink: /index.html
         </div>
 
         <nav class="tabs">
-            <button class="tab active" onclick="switchTab('home', event)">[ home ]</button>
-            <button class="tab" onclick="switchTab('games', event)">[ games ]</button>
-            <button class="tab" onclick="switchTab('chat', event)">[ chat ]</button>
-          <button class="tab" onclick="switchTab('users', event)">[ users ]</button>
-            <button class="tab" onclick="switchTab('shop', event)">[ shop ]</button>
-            <button class="tab" onclick="switchTab('credits', event)">[ credits ]</button>
+            <button class="tab active" data-tab="home" onclick="switchTab('home', event)">[ home ]</button>
+            <button class="tab" data-tab="games" onclick="switchTab('games', event)">[ games ]</button>
+            <button class="tab" data-tab="chat" onclick="switchTab('chat', event)">[ chat ]</button>
+          <button class="tab" data-tab="users" onclick="switchTab('users', event)">[ users ]</button>
+            <button class="tab" data-tab="profile" onclick="switchTab('profile', event)">[ profile ]</button>
+            <button class="tab" data-tab="shop" onclick="switchTab('shop', event)">[ shop ]</button>
+            <button class="tab" data-tab="credits" onclick="switchTab('credits', event)">[ credits ]</button>
         </nav>
 
         <div class="content">
@@ -240,7 +241,40 @@ permalink: /index.html
 
                     <div id="users-auth-logged-in" style="display:none;">
                       <div class="users-auth-hello" id="users-auth-hello"></div>
-                      <button class="win-btn" onclick="logoutUser()">[ LOG OUT ]</button>
+                      <div class="users-auth-actions">
+                        <button class="win-btn" onclick="openProfileSettings()">[ SETTINGS ]</button>
+                        <button class="win-btn" onclick="openMyProfile()">[ VIEW PROFILE ]</button>
+                        <button class="win-btn" onclick="logoutUser()">[ LOG OUT ]</button>
+                      </div>
+                    </div>
+
+                    <div id="users-settings" class="users-settings" style="display:none;">
+                      <div class="users-settings-title">Customize your profile</div>
+
+                      <div class="users-auth-group">
+                        <label for="profile-display-name">Display name</label>
+                        <input id="profile-display-name" class="chat-input-field" type="text" maxlength="40" placeholder="how your profile name appears">
+                      </div>
+
+                      <div class="users-auth-group">
+                        <label for="profile-pronouns">Pronouns</label>
+                        <input id="profile-pronouns" class="chat-input-field" type="text" maxlength="40" placeholder="e.g. he/him, she/her, they/them">
+                      </div>
+
+                      <div class="users-auth-group">
+                        <label for="profile-song-url">Background song (YouTube link)</label>
+                        <input id="profile-song-url" class="chat-input-field" type="url" maxlength="300" placeholder="https://www.youtube.com/watch?v=...">
+                      </div>
+
+                      <div class="users-auth-group">
+                        <label for="profile-bio">Bio / About</label>
+                        <textarea id="profile-bio" class="users-profile-textarea" maxlength="280" placeholder="write something about yourself..."></textarea>
+                      </div>
+
+                      <div class="users-auth-actions">
+                        <button class="win-btn" onclick="saveProfileSettings()">[ SAVE ]</button>
+                        <button class="win-btn" onclick="closeProfileSettings()">[ CLOSE ]</button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -250,6 +284,35 @@ permalink: /index.html
                   <div class="panel-body">
                     <div id="users-list-status" class="users-list-status">Loading users...</div>
                     <div id="users-list" class="users-list"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- PROFILE -->
+            <div id="tab-profile" class="tab-panel">
+              <div class="panel">
+                <div class="panel-header">&#9670; User Profile</div>
+                <div class="panel-body">
+                  <div id="profile-status" class="users-list-status">Select a user from the users list.</div>
+                  <div id="profile-view" class="profile-view" style="display:none;">
+                    <div class="profile-card">
+                      <div class="profile-card-header">
+                        <div>
+                          <div class="profile-display-name" id="profile-display-name-view">Unknown</div>
+                          <div class="profile-username" id="profile-username-view">@unknown</div>
+                        </div>
+                        <div class="profile-pronouns" id="profile-pronouns-view"></div>
+                      </div>
+
+                      <div class="profile-bio" id="profile-bio-view"></div>
+
+                      <div class="profile-links" id="profile-links"></div>
+
+                      <div id="profile-song-player-wrap" class="profile-song-player-wrap" style="display:none;">
+                        <iframe id="profile-song-player" class="profile-song-player" allowfullscreen title="Profile song player"></iframe>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -388,7 +451,12 @@ permalink: /index.html
             document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.getElementById('tab-' + name).classList.add('active');
-            if (e && e.target) e.target.classList.add('active');
+            if (e && e.target) {
+              e.target.classList.add('active');
+            } else {
+              const tabButton = document.querySelector(`.tab[data-tab="${name}"]`);
+              if (tabButton) tabButton.classList.add('active');
+            }
             if (name === 'chat') {
                 if (window.openChatTab) {
                     window.openChatTab();
@@ -403,6 +471,9 @@ permalink: /index.html
               } else {
                 window._usersTabPending = true;
               }
+            }
+            if (name === 'profile' && window.openProfileTab) {
+              window.openProfileTab();
             }
             if (name === 'games') window.onGamesTabVisible?.();
         }
@@ -425,8 +496,8 @@ permalink: /index.html
                signOut, onAuthStateChanged }
         from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
       import { getFirestore, collection, addDoc, onSnapshot,
-               query, orderBy, limit, deleteDoc, doc, 
-               serverTimestamp, getDoc, setDoc }
+                query, orderBy, limit, deleteDoc, doc, 
+                serverTimestamp, getDoc, setDoc, getDocs, where }
         from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
       import { firebaseConfig } from './firebase-config.js';
 
@@ -441,6 +512,8 @@ permalink: /index.html
       let chatStarted = false;
       let currentAccount = null;
       let usersListStarted = false;
+      let usersByUsernameLower = new Map();
+      let currentProfileUsername = '';
 
       function setUsersMessage(text, isError = false) {
         const el = document.getElementById('users-auth-message');
@@ -451,6 +524,9 @@ permalink: /index.html
       function setUsersAuthUI(isLoggedIn) {
         document.getElementById('users-auth-forms').style.display = isLoggedIn ? 'none' : 'block';
         document.getElementById('users-auth-logged-in').style.display = isLoggedIn ? 'block' : 'none';
+        if (!isLoggedIn) {
+          document.getElementById('users-settings').style.display = 'none';
+        }
       }
 
       function authEmailForUsername(username) {
@@ -459,6 +535,167 @@ permalink: /index.html
           .map(ch => ch.codePointAt(0).toString(16).padStart(4, '0'))
           .join('');
         return `u${hex}@users.wavelength.local`;
+      }
+
+      function normalizeUsername(value) {
+        return String(value || '').trim().toLowerCase();
+      }
+
+      function youtubeEmbedUrl(songUrl) {
+        if (!songUrl) return '';
+        try {
+          const parsed = new URL(songUrl);
+          const host = parsed.hostname.toLowerCase();
+          let videoId = '';
+
+          if (host === 'youtu.be') {
+            videoId = parsed.pathname.slice(1);
+          } else if (host === 'youtube.com' || host === 'www.youtube.com' || host === 'm.youtube.com') {
+            if (parsed.pathname === '/watch') {
+              videoId = parsed.searchParams.get('v') || '';
+            } else if (parsed.pathname.startsWith('/embed/')) {
+              videoId = parsed.pathname.slice('/embed/'.length);
+            } else if (parsed.pathname.startsWith('/shorts/')) {
+              videoId = parsed.pathname.slice('/shorts/'.length);
+            }
+          }
+
+          videoId = videoId.split('/')[0].split('?')[0].trim();
+          if (!/^[a-zA-Z0-9_-]{11}$/.test(videoId)) return '';
+          return `https://www.youtube.com/embed/${videoId}`;
+        } catch {
+          return '';
+        }
+      }
+
+      function normalizeSongUrl(songUrl) {
+        const embedUrl = youtubeEmbedUrl(songUrl);
+        if (!embedUrl) return '';
+        return embedUrl.replace('/embed/', '/watch?v=');
+      }
+
+      function profileFromAccountData(data) {
+        const username = String(data.username || 'unknown').trim();
+        const displayName = String(data.displayName || username).trim();
+        const bio = String(data.bio || '').trim();
+        const pronouns = String(data.pronouns || '').trim();
+        const songUrl = String(data.songUrl || '').trim();
+        return {
+          username,
+          usernameLower: normalizeUsername(data.usernameLower || username),
+          displayName,
+          bio,
+          pronouns,
+          songUrl
+        };
+      }
+
+      function setProfileStatus(text, isError = false) {
+        const statusEl = document.getElementById('profile-status');
+        if (!statusEl) return;
+        statusEl.textContent = text || '';
+        statusEl.classList.toggle('users-auth-message-error', isError);
+      }
+
+      function setProfileQuery(username) {
+        const url = new URL(window.location.href);
+        if (username) {
+          url.searchParams.set('profile', username);
+        } else {
+          url.searchParams.delete('profile');
+        }
+        history.replaceState({}, '', url);
+      }
+
+      function renderProfileView(profile) {
+        const view = document.getElementById('profile-view');
+        const links = document.getElementById('profile-links');
+        const songWrap = document.getElementById('profile-song-player-wrap');
+        const songPlayer = document.getElementById('profile-song-player');
+
+        if (!view || !links || !songWrap || !songPlayer) return;
+
+        document.getElementById('profile-display-name-view').textContent = profile.displayName;
+        document.getElementById('profile-username-view').textContent = `@${profile.username}`;
+        document.getElementById('profile-pronouns-view').textContent = profile.pronouns ? `[ ${profile.pronouns} ]` : '';
+        document.getElementById('profile-bio-view').textContent = profile.bio || 'No bio yet.';
+        currentProfileUsername = profile.username;
+
+        links.innerHTML = '';
+        const profileLink = document.createElement('a');
+        profileLink.className = 'profile-link-btn';
+        profileLink.href = `?profile=${encodeURIComponent(profile.username)}#profile`;
+        profileLink.textContent = `@${profile.username}`;
+        profileLink.addEventListener('click', (event) => {
+          event.preventDefault();
+          setProfileQuery(profile.username);
+        });
+        links.appendChild(profileLink);
+
+        const songEmbed = youtubeEmbedUrl(profile.songUrl);
+        if (songEmbed) {
+          const songLink = document.createElement('a');
+          songLink.className = 'profile-link-btn';
+          songLink.href = profile.songUrl;
+          songLink.target = '_blank';
+          songLink.rel = 'noopener noreferrer';
+          songLink.textContent = 'Background song (YouTube)';
+          links.appendChild(songLink);
+
+          songPlayer.src = songEmbed;
+          songWrap.style.display = 'block';
+        } else {
+          songPlayer.removeAttribute('src');
+          songWrap.style.display = 'none';
+        }
+
+        view.style.display = 'block';
+        setProfileStatus('');
+      }
+
+      async function loadProfileByUsername(username) {
+        const normalized = normalizeUsername(username);
+        if (!normalized) {
+          setProfileStatus('Profile username is missing.', true);
+          return;
+        }
+
+        const existing = usersByUsernameLower.get(normalized);
+        if (existing) {
+          currentProfileUsername = existing.username;
+          renderProfileView(existing);
+          setProfileQuery(existing.username);
+          return;
+        }
+
+        const status = document.getElementById('profile-status');
+        if (status) status.textContent = 'Loading profile...';
+
+        try {
+          const profileQuery = query(collection(db, 'accounts'), where('usernameLower', '==', normalized), limit(1));
+          const snap = await getDocs(profileQuery);
+          if (snap.empty) {
+            document.getElementById('profile-view').style.display = 'none';
+            setProfileStatus('Profile not found.', true);
+            return;
+          }
+
+          const profile = profileFromAccountData(snap.docs[0].data());
+          usersByUsernameLower.set(profile.usernameLower, profile);
+          currentProfileUsername = profile.username;
+          renderProfileView(profile);
+          setProfileQuery(profile.username);
+        } catch {
+          document.getElementById('profile-view').style.display = 'none';
+          setProfileStatus('Could not load profile.', true);
+        }
+      }
+
+      function fillProfileSettings(profile) {
+        document.getElementById('profile-display-name').value = profile.displayName || '';
+        document.getElementById('profile-pronouns').value = profile.pronouns || '';
+        document.getElementById('profile-song-url').value = profile.songUrl || '';
+        document.getElementById('profile-bio').value = profile.bio || '';
       }
 
       async function updateChatLinkUI() {
@@ -500,6 +737,7 @@ permalink: /index.html
       function renderUsersList(docs) {
         const list = document.getElementById('users-list');
         const status = document.getElementById('users-list-status');
+        usersByUsernameLower = new Map();
 
         if (!docs.length) {
           list.innerHTML = '';
@@ -508,11 +746,38 @@ permalink: /index.html
         }
 
         status.textContent = `${docs.length} registered user${docs.length === 1 ? '' : 's'}`;
-        list.innerHTML = docs.map((d, i) => {
-          const data = d.data();
-          const name = esc(data.username || 'unknown');
-          return `<div class="users-list-item"><span class="users-list-rank">${i + 1}.</span> <span class="users-list-name">${name}</span></div>`;
-        }).join('');
+        list.innerHTML = '';
+
+        docs.forEach((d, i) => {
+          const profile = profileFromAccountData(d.data());
+          usersByUsernameLower.set(profile.usernameLower, profile);
+
+          const row = document.createElement('div');
+          row.className = 'users-list-item';
+
+          const rank = document.createElement('span');
+          rank.className = 'users-list-rank';
+          rank.textContent = `${i + 1}.`;
+
+          const link = document.createElement('a');
+          link.className = 'users-list-link';
+          link.href = `?profile=${encodeURIComponent(profile.username)}#profile`;
+          link.textContent = profile.displayName;
+          link.addEventListener('click', async (event) => {
+            event.preventDefault();
+            switchTab('profile');
+            await loadProfileByUsername(profile.username);
+          });
+
+          const username = document.createElement('span');
+          username.className = 'users-list-name';
+          username.textContent = ` @${profile.username}`;
+
+          row.appendChild(rank);
+          row.appendChild(link);
+          row.appendChild(username);
+          list.appendChild(row);
+        });
       }
 
       function startUsersListListener() {
@@ -536,6 +801,119 @@ permalink: /index.html
         }
       };
 
+      window.openProfileTab = function () {
+        if (!currentProfileUsername) {
+          setProfileStatus('Select a user from the users list.');
+        }
+      };
+
+      window.openProfileByUsername = async function (username) {
+        switchTab('profile');
+        await loadProfileByUsername(username);
+      };
+
+      window.openMyProfile = async function () {
+        if (!currentAccount) {
+          setUsersMessage('Log in to view your profile.', true);
+          return;
+        }
+        try {
+          const snap = await getDoc(doc(db, 'accounts', currentAccount.uid));
+          if (!snap.exists()) {
+            setUsersMessage('Could not find your account profile.', true);
+            return;
+          }
+          const profile = profileFromAccountData(snap.data());
+          usersByUsernameLower.set(profile.usernameLower, profile);
+          currentProfileUsername = profile.username;
+          switchTab('profile');
+          renderProfileView(profile);
+          setProfileQuery(profile.username);
+        } catch {
+          setUsersMessage('Could not load your profile.', true);
+        }
+      };
+
+      window.openProfileSettings = async function () {
+        if (!currentAccount) {
+          setUsersMessage('Log in to edit profile settings.', true);
+          return;
+        }
+
+        try {
+          const snap = await getDoc(doc(db, 'accounts', currentAccount.uid));
+          const profile = profileFromAccountData(snap.exists() ? snap.data() : {});
+          fillProfileSettings(profile);
+          document.getElementById('users-settings').style.display = 'block';
+          setUsersMessage('');
+        } catch {
+          setUsersMessage('Could not open profile settings.', true);
+        }
+      };
+
+      window.closeProfileSettings = function () {
+        document.getElementById('users-settings').style.display = 'none';
+      };
+
+      window.saveProfileSettings = async function () {
+        if (!currentAccount) {
+          setUsersMessage('Log in to edit profile settings.', true);
+          return;
+        }
+
+        const displayName = document.getElementById('profile-display-name').value.trim();
+        const pronouns = document.getElementById('profile-pronouns').value.trim();
+        const bio = document.getElementById('profile-bio').value.trim();
+        const songUrlInput = document.getElementById('profile-song-url').value.trim();
+        const songUrl = normalizeSongUrl(songUrlInput);
+
+        if (songUrlInput && !songUrl) {
+          setUsersMessage('Background song must be a valid YouTube URL.', true);
+          return;
+        }
+
+        try {
+          const accountRef = doc(db, 'accounts', currentAccount.uid);
+          const snap = await getDoc(accountRef);
+          const existing = snap.exists() ? snap.data() : {};
+          const username = String(existing.username || '').trim();
+          if (!username) {
+            setUsersMessage('Your account is missing a username.', true);
+            return;
+          }
+
+          await setDoc(accountRef, {
+            uid: currentAccount.uid,
+            username,
+            usernameLower: normalizeUsername(username),
+            displayName: displayName || username,
+            pronouns,
+            bio,
+            songUrl,
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+
+          const profile = profileFromAccountData({
+            ...existing,
+            username,
+            displayName: displayName || username,
+            pronouns,
+            bio,
+            songUrl
+          });
+          usersByUsernameLower.set(profile.usernameLower, profile);
+
+          if (currentProfileUsername && normalizeUsername(currentProfileUsername) === profile.usernameLower) {
+            renderProfileView(profile);
+          }
+
+          setUsersMessage('Profile updated.');
+          document.getElementById('users-settings').style.display = 'none';
+        } catch (err) {
+          setUsersMessage(err?.message || 'Could not save profile settings.', true);
+        }
+      };
+
       window.registerUser = async function () {
         const username = document.getElementById('users-register-name').value.trim();
         const password = document.getElementById('users-register-password').value;
@@ -555,6 +933,11 @@ permalink: /index.html
           await setDoc(doc(db, 'accounts', cred.user.uid), {
             uid: cred.user.uid,
             username,
+            usernameLower: normalizeUsername(username),
+            displayName: username,
+            bio: '',
+            pronouns: '',
+            songUrl: '',
             createdAt: serverTimestamp()
           }, { merge: true });
           setUsersMessage('Account created. You are now logged in.');
@@ -654,10 +1037,19 @@ permalink: /index.html
         const accountRef = doc(db, 'accounts', user.uid);
         const snap = await getDoc(accountRef);
         const data = snap.exists() ? snap.data() : {};
-        const username = data.username || user.email || 'user';
+        const username = String(data.username || user.email || 'user').trim();
+        const usernameLower = normalizeUsername(data.usernameLower || username);
+        const displayName = String(data.displayName || username).trim();
 
-        statusEl.textContent = `Logged in as ${username}`;
-        helloEl.textContent = `Welcome back, ${username}.`;
+        if (data.username && (!data.usernameLower || !data.displayName)) {
+          await setDoc(accountRef, {
+            usernameLower,
+            displayName
+          }, { merge: true });
+        }
+
+        statusEl.textContent = `Logged in as ${displayName}`;
+        helloEl.textContent = `Welcome back, ${displayName}.`;
         setUsersAuthUI(true);
         await updateChatLinkUI();
       });
@@ -834,6 +1226,16 @@ permalink: /index.html
         document.getElementById('username-modal').style.display = 'flex';
         setTimeout(() => document.getElementById('username-input').focus(), 50);
       };
+
+      async function applyInitialProfileRoute() {
+        const params = new URLSearchParams(window.location.search);
+        const username = params.get('profile');
+        if (!username) return;
+        switchTab('profile');
+        await loadProfileByUsername(username);
+      }
+
+      applyInitialProfileRoute();
 
       if (window._chatTabPending) {
         window._chatTabPending = false;
