@@ -14,8 +14,8 @@
     },
     {
       "id": "well-known",
-      "label": "Well Known",
-      "title": "Well Known Community Member",
+      "label": "well-known",
+      "title": "well-known community member",
       "image": "./assets/badges/users/well-known.svg"
     }
   ],
