@@ -204,6 +204,7 @@ permalink: /index.html
                     &#9670; Chat &nbsp;<span id="chat-user-label" style="font-weight:normal;font-size:10px;opacity:0.85;"></span>
                     <span id="chat-link-status" style="font-weight:normal;font-size:10px;opacity:0.85;margin-left:8px;"></span>
                     <button id="chat-link-btn" onclick="linkChatToAccount()" class="win-btn" style="display:none;font-size:9px; margin-left:10px; padding: 2px 5px;">[ LINK ACCOUNT ]</button>
+                    <button id="chat-timeout-btn" onclick="timeoutUserByName()" class="win-btn" style="display:none;font-size:9px; margin-left:10px; padding: 2px 5px;">[ TIMEOUT USER ]</button>
                     <button onclick="changeUsername()" class="win-btn" style="font-size:9px; margin-left:10px; padding: 2px 5px;">[ CHANGE NAME ]</button>
                   </div>
                   <div class="panel-body" style="padding:0;display:flex;flex-direction:column;height:68vh;">
@@ -543,6 +544,10 @@ permalink: /index.html
       let latestUsersListDocs = [];
       let badgeDefinitions = new Map();
       let userBadgesByUsernameLower = new Map();
+      let currentUserCanModerateChat = false;
+      let currentTimeoutUntilMs = 0;
+      let chatTimeoutUnsubscribe = null;
+      const chatAdminBadgeIds = new Set(['administrator', 'admin', 'co-owner']);
       const embeddedBadgeConfig = {{ profileBadges | dump | safe }};
 
       function setUsersMessage(text, isError = false) {
@@ -658,6 +663,47 @@ permalink: /index.html
       function badgesForUsername(username) {
         const ids = userBadgesByUsernameLower.get(normalizeUsername(username)) || [];
         return ids.map((id) => badgeDefinitions.get(id)).filter(Boolean);
+      }
+
+      function userCanModerateChat(username) {
+        const ids = userBadgesByUsernameLower.get(normalizeUsername(username)) || [];
+        return ids.some((id) => {
+          if (chatAdminBadgeIds.has(id)) return true;
+          const badge = badgeDefinitions.get(id);
+          const label = String(badge?.label || '').toLowerCase();
+          const title = String(badge?.title || '').toLowerCase();
+          return /\badministrator\b|\badmin\b/.test(`${label} ${title}`);
+        });
+      }
+
+      function chatTimeoutLabel(untilMs) {
+        return new Date(untilMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+
+      function isCurrentUserTimedOut() {
+        return currentTimeoutUntilMs > Date.now();
+      }
+
+      function updateChatInputState() {
+        const input = document.getElementById('chat-msg-input');
+        const btn = document.querySelector('.chat-footer .win-btn');
+        if (!input || !btn) return;
+
+        const defaultPlaceholder = input.dataset.defaultPlaceholder || input.placeholder || 'type a message...';
+        input.dataset.defaultPlaceholder = defaultPlaceholder;
+
+        if (isCurrentUserTimedOut()) {
+          input.disabled = true;
+          btn.disabled = true;
+          input.placeholder = `timed out until ${chatTimeoutLabel(currentTimeoutUntilMs)}`;
+          return;
+        }
+
+        if (input.dataset.cooldownActive === '1') return;
+
+        input.disabled = false;
+        btn.disabled = false;
+        input.placeholder = defaultPlaceholder;
       }
 
       function buildBadgeElement(badge, className = 'profile-badge') {
@@ -1329,7 +1375,7 @@ permalink: /index.html
             if (currentAccount) payload.authUid = currentAccount.uid;
             await setDoc(nameRef, payload, { merge: true });
             currentUser = saved;
-            showChatUI();
+            await showChatUI();
             return;
           } else {
             // Someone else claimed our old name while we were gone
@@ -1361,12 +1407,37 @@ permalink: /index.html
         localStorage.setItem('wl_username', name);
         document.getElementById('username-modal').style.display = 'none';
         errorEl.textContent = '';
-        showChatUI();
+        await showChatUI();
       };
 
-      function showChatUI () {
+      async function showChatUI () {
+        await ensureBadgeConfigLoaded();
+        currentUserCanModerateChat = userCanModerateChat(currentUser);
         document.getElementById('chat-ui').style.display = 'block';
         document.getElementById('chat-user-label').textContent = '[ logged in as: ' + currentUser + ' ]';
+        const timeoutBtn = document.getElementById('chat-timeout-btn');
+        if (timeoutBtn) {
+          timeoutBtn.style.display = currentUserCanModerateChat ? '' : 'none';
+        }
+        if (!chatTimeoutUnsubscribe) {
+          try {
+            chatTimeoutUnsubscribe = onSnapshot(
+              doc(db, 'chatTimeouts', uid),
+              (snap) => {
+                const timeoutData = snap.exists() ? snap.data() : {};
+                currentTimeoutUntilMs = Number(timeoutData?.untilMs || 0);
+                updateChatInputState();
+              },
+              () => {
+                currentTimeoutUntilMs = 0;
+                updateChatInputState();
+              }
+            );
+          } catch {
+            currentTimeoutUntilMs = 0;
+          }
+        }
+        updateChatInputState();
         updateChatLinkUI();
         if (!chatStarted) { startListener(); chatStarted = true; }
       }
@@ -1375,8 +1446,10 @@ permalink: /index.html
       function startSendCooldown() {
         const input = document.getElementById('chat-msg-input');
         const btn = document.querySelector('.chat-footer .win-btn');
-        const original = input.placeholder;
+        const original = input.dataset.defaultPlaceholder || input.placeholder;
+        input.dataset.defaultPlaceholder = original;
 
+        input.dataset.cooldownActive = '1';
         input.disabled = true;
         btn.disabled = true;
 
@@ -1387,9 +1460,8 @@ permalink: /index.html
           remaining--;
           if (remaining <= 0) {
             clearInterval(interval);
-            input.disabled = false;
-            btn.disabled = false;
-            input.placeholder = original;
+            input.dataset.cooldownActive = '0';
+            updateChatInputState();
           } else {
             input.placeholder = `wait ${remaining}s before sending...`;
           }
@@ -1399,20 +1471,33 @@ permalink: /index.html
       function startListener () {
         // Fetch last 100 messages by ordering descending, then reverse for display
         const q = query(collection(db, 'messages'), orderBy('time', 'desc'), limit(100));
-        onSnapshot(q, snap => {
+        onSnapshot(q, (snap) => {
           const box = document.getElementById('chat-messages');
           box.innerHTML = '';
           const docs = [];
           snap.forEach(d => docs.push(d));
           docs.reverse(); // oldest first for display
-          docs.forEach(d => renderMessage(d));
+          docs.forEach((d) => {
+            try {
+              renderMessage(d);
+            } catch {
+              // Skip malformed documents so real-time updates continue flowing.
+            }
+          });
           box.scrollTop = box.scrollHeight;
+        }, () => {
+          const box = document.getElementById('chat-messages');
+          if (box && !box.dataset.listenerErrorShown) {
+            box.dataset.listenerErrorShown = '1';
+            box.innerHTML = '<div class="msg-time">chat connection failed. reload to retry.</div>';
+          }
         });
       }
 
       function renderMessage (docSnap) {
         const data   = docSnap.data();
         const isMine = data.uid === uid;
+        const canDelete = isMine || currentUserCanModerateChat;
         const time   = data.time?.toDate
           ? data.time.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           : '';
@@ -1423,7 +1508,7 @@ permalink: /index.html
           `<span class="msg-user">${esc(data.user)}</span>` +
           `<span class="msg-time">${time}</span>` +
           `<span class="msg-text">${esc(data.text)}</span>` +
-          (isMine ? `<button class="msg-del" title="delete" onclick="deleteMsg('${docSnap.id}')">✕</button>` : '');
+          (canDelete ? `<button class="msg-del" title="delete" onclick="deleteMsg('${docSnap.id}', '${data.uid || ''}')">✕</button>` : '');
 
         document.getElementById('chat-messages').appendChild(el);
       }
@@ -1467,6 +1552,10 @@ permalink: /index.html
         const input = document.getElementById('chat-msg-input');
         const text  = input.value.trim();
         if (!text || !currentUser || input.disabled) return; // <-- check disabled first
+        if (isCurrentUserTimedOut()) {
+          updateChatInputState();
+          return;
+        }
         input.value = '';
         startSendCooldown(); // <-- move this BEFORE the await
         await addDoc(collection(db, 'messages'), {
@@ -1477,8 +1566,67 @@ permalink: /index.html
         });
       };
 
-      window.deleteMsg = async function (id) {
+      window.deleteMsg = async function (id, messageOwnerUid = '') {
+        if (messageOwnerUid !== uid && !currentUserCanModerateChat) return;
         await deleteDoc(doc(db, 'messages', id));
+      };
+
+      async function applyTimeoutToUid(uidToTimeout, targetUserLabel = 'user') {
+        const untilPrompt = window.prompt(`Timeout ${targetUserLabel} for how many minutes?`, '10');
+        if (untilPrompt === null) return;
+
+        const minutes = Number.parseInt(untilPrompt, 10);
+        if (!Number.isFinite(minutes) || minutes < 1 || minutes > 1440) {
+          window.alert('Enter a number of minutes between 1 and 1440.');
+          return;
+        }
+
+        const untilMs = Date.now() + (minutes * 60 * 1000);
+        await setDoc(doc(db, 'chatTimeouts', uidToTimeout), {
+          uid: uidToTimeout,
+          username: String(targetUserLabel || '').trim(),
+          untilMs,
+          byUid: uid,
+          byUser: currentUser || '',
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      }
+
+      window.timeoutUserByName = async function () {
+        if (!currentUserCanModerateChat) return;
+        const usernameInput = window.prompt('Enter the username to timeout:', '');
+        if (usernameInput === null) return;
+
+        const targetUsername = String(usernameInput || '').trim();
+        const targetLower = normalizeUsername(targetUsername);
+        if (!targetLower) return;
+
+        const nameRef = doc(db, 'usernames', targetLower);
+        const nameSnap = await getDoc(nameRef);
+        if (!nameSnap.exists()) {
+          window.alert('That username is not currently registered in chat.');
+          return;
+        }
+
+        const targetUid = String(nameSnap.data()?.uid || '').trim();
+        if (!targetUid) {
+          window.alert('Could not find a UID for that username.');
+          return;
+        }
+        if (targetUid === uid) {
+          window.alert('You cannot timeout yourself.');
+          return;
+        }
+
+        await applyTimeoutToUid(targetUid, targetUsername);
+      };
+
+      window.timeoutUser = async function (targetUid, targetUser = 'user') {
+        if (!currentUserCanModerateChat) return;
+        const uidToTimeout = String(targetUid || '').trim();
+        if (!uidToTimeout || uidToTimeout === uid) return;
+
+        await applyTimeoutToUid(uidToTimeout, targetUser);
       };
 
       function esc (s) {
@@ -1496,10 +1644,17 @@ permalink: /index.html
           }
         }
         currentUser = null;
+        currentTimeoutUntilMs = 0;
+        if (chatTimeoutUnsubscribe) {
+          chatTimeoutUnsubscribe();
+          chatTimeoutUnsubscribe = null;
+        }
         localStorage.removeItem('wl_username');
         document.getElementById('chat-ui').style.display = 'none';
         document.getElementById('chat-link-status').textContent = '';
         document.getElementById('chat-link-btn').style.display = 'none';
+        const timeoutBtn = document.getElementById('chat-timeout-btn');
+        if (timeoutBtn) timeoutBtn.style.display = 'none';
         document.getElementById('username-input').value = '';
         document.getElementById('username-error').textContent = '';
         document.getElementById('username-modal').style.display = 'flex';
