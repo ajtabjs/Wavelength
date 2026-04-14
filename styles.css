@@ -433,6 +433,27 @@ body {
     color: #444;
 }
 
+.users-theme-grid {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px 10px;
+    align-items: center;
+    margin-top: 4px;
+}
+
+.users-theme-grid label {
+    font-size: 11px;
+}
+
+.users-color-input {
+    width: 40px;
+    height: 24px;
+    padding: 0;
+    border: 2px solid;
+    border-color: #808080 #fff #fff #808080;
+    background: #fff;
+}
+
 .users-list-status {
     font-size: 11px;
     color: #444;
@@ -518,7 +539,8 @@ body {
     width: 100%;
     border: 2px solid;
     border-color: #808080 #fff #fff #808080;
-    background: linear-gradient(180deg, #f8f8f8 0%, #e5e5e5 100%);
+    background: linear-gradient(180deg, var(--profile-bg-start, #f8f8f8) 0%, var(--profile-bg-end, #e5e5e5) 100%);
+    color: var(--profile-text, #000);
     padding: 12px;
 }
 
@@ -541,7 +563,7 @@ body {
     height: 64px;
     border: 2px solid;
     border-color: #808080 #fff #fff #808080;
-    background: #fff;
+    background: var(--profile-panel-bg, #fff);
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -564,24 +586,24 @@ body {
     justify-content: center;
     font-size: 18px;
     font-weight: bold;
-    color: #000080;
+    color: var(--profile-accent, #000080);
     background: linear-gradient(180deg, #ececec 0%, #d8d8d8 100%);
 }
 
 .profile-display-name {
     font-size: 18px;
     font-weight: bold;
-    color: #000080;
+    color: var(--profile-accent, #000080);
 }
 
 .profile-username {
     font-size: 11px;
-    color: #444;
+    color: var(--profile-text-muted, #444);
 }
 
 .profile-pronouns {
     font-size: 11px;
-    color: #000080;
+    color: var(--profile-accent, #000080);
     font-weight: bold;
 }
 
@@ -601,7 +623,7 @@ body {
     height: 22px;
     padding: 2px;
     border: 1px solid #808080;
-    background: #f0f0f0;
+    background: var(--profile-panel-bg, #f0f0f0);
     cursor: help;
 }
 
@@ -650,7 +672,8 @@ body {
 .profile-bio {
     border: 2px solid;
     border-color: #fff #808080 #808080 #fff;
-    background: #fff;
+    background: var(--profile-panel-bg, #fff);
+    color: var(--profile-text, #000);
     padding: 8px;
     font-size: 12px;
     min-height: 72px;
@@ -669,8 +692,8 @@ body {
     text-align: center;
     border: 2px solid;
     border-color: #fff #808080 #808080 #fff;
-    background: #c0c0c0;
-    color: #000;
+    background: var(--profile-bg-end, #c0c0c0);
+    color: var(--profile-text, #000);
     font-weight: bold;
     padding: 7px 8px;
 }

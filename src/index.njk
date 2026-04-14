@@ -284,6 +284,37 @@ permalink: /index.html
                         <textarea id="profile-bio" class="users-profile-textarea" maxlength="280" placeholder="write something about yourself..."></textarea>
                       </div>
 
+                      <div class="users-auth-group">
+                        <label for="profile-theme-preset">Profile theme</label>
+                        <select id="profile-theme-preset" class="chat-input-field" onchange="applyProfileThemePreset()">
+                          <option value="classic">Classic</option>
+                          <option value="ocean">Ocean</option>
+                          <option value="sunset">Sunset</option>
+                          <option value="matrix">Matrix</option>
+                          <option value="midnight">Midnight</option>
+                        </select>
+                      </div>
+
+                      <div class="users-auth-group">
+                        <label>Theme colors (optional)</label>
+                        <div class="users-theme-grid">
+                          <label for="profile-theme-accent">Accent</label>
+                          <input id="profile-theme-accent" class="users-color-input" type="color" value="#000080">
+                          <label for="profile-theme-bg-start">Background top</label>
+                          <input id="profile-theme-bg-start" class="users-color-input" type="color" value="#f8f8f8">
+                          <label for="profile-theme-bg-end">Background bottom</label>
+                          <input id="profile-theme-bg-end" class="users-color-input" type="color" value="#e5e5e5">
+                          <label for="profile-theme-text">Text</label>
+                          <input id="profile-theme-text" class="users-color-input" type="color" value="#000000">
+                          <label for="profile-theme-text-muted">Muted text</label>
+                          <input id="profile-theme-text-muted" class="users-color-input" type="color" value="#444444">
+                          <label for="profile-theme-panel-bg">Panel background</label>
+                          <input id="profile-theme-panel-bg" class="users-color-input" type="color" value="#ffffff">
+                        </div>
+                        <div class="users-profile-hint">Choose a preset, then fine-tune colors if you want.</div>
+                        <button class="win-btn" type="button" onclick="resetProfileThemeColors()">[ RESET COLORS TO PRESET ]</button>
+                      </div>
+
                       <div class="users-auth-actions">
                         <button class="win-btn" onclick="saveProfileSettings()">[ SAVE ]</button>
                         <button class="win-btn" onclick="closeProfileSettings()">[ CLOSE ]</button>
@@ -465,7 +496,6 @@ permalink: /index.html
 
     <script src="games-loader.js"></script>
     <script src="site.js" type="module"></script>
-
 
 </body>
 </html>
