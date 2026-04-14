@@ -125,6 +125,13 @@ function normalizeSongUrl(songUrl) {
   return '';
 }
 
+function formatAudioTime(seconds) {
+  const safeSeconds = Number.isFinite(seconds) && seconds > 0 ? Math.floor(seconds) : 0;
+  const mins = Math.floor(safeSeconds / 60);
+  const secs = safeSeconds % 60;
+  return `${mins}:${String(secs).padStart(2, '0')}`;
+}
+
 const PROFILE_THEME_PRESETS = {
   classic: {
     accent: '#000080',
@@ -303,6 +310,8 @@ function profileFromAccountData(data) {
   const bio = String(data.bio || '').trim();
   const pronouns = String(data.pronouns || '').trim();
   const songUrl = String(data.songUrl || '').trim();
+  const songTitle = String(data.songTitle || '').trim();
+  const songArtist = String(data.songArtist || '').trim();
   const profileImageUrl = normalizeHttpUrl(data.profileImageUrl || '');
   const profileImageRequestedUrl = normalizeHttpUrl(data.profileImageRequestedUrl || '');
   const theme = profileThemeFromData(data);
@@ -323,6 +332,8 @@ function profileFromAccountData(data) {
     bio,
     pronouns,
     songUrl,
+    songTitle,
+    songArtist,
     profileImageUrl,
     profileImageRequestedUrl,
     profileImageStatus,
@@ -593,8 +604,17 @@ function renderProfileView(profile) {
   // 2. Players & Skins
   const songPlayer = document.getElementById('profile-song-player'); // Youtube iframe
   const audioPlayer = document.getElementById('profile-audio-player'); // Hidden audio tag
-  const retroSkin = document.getElementById('retro-audio-skin'); // The visual Winamp-style UI
+  const retroSkin = document.getElementById('retro-audio-skin'); // The visual Win95/XP UI
   const statusText = document.getElementById('audio-status-text');
+  const audioPlayBtn = document.getElementById('profile-audio-play-btn');
+  const audioStopBtn = document.getElementById('profile-audio-stop-btn');
+  const audioSongName = document.getElementById('audio-song-name');
+  const audioArtistName = document.getElementById('audio-artist-name');
+  const audioTimeCurrent = document.getElementById('audio-time-current');
+  const audioTimeDuration = document.getElementById('audio-time-duration');
+  const audioTimestampStart = document.getElementById('audio-timestamp-start');
+  const audioTimestampEnd = document.getElementById('audio-timestamp-end');
+  const audioProgressFill = document.getElementById('audio-progress-fill');
 
   // 3. Profile Info Elements
   const avatar = document.getElementById('profile-avatar-view');
@@ -659,7 +679,7 @@ function renderProfileView(profile) {
 
   // --- AUDIO / VIDEO PLAYER LOGIC ---
   links.innerHTML = '';
-  const songUrl = profile.songUrl;
+  const songUrl = (profile.songUrl || '').trim();
   const songEmbed = youtubeEmbedUrl(songUrl);
   const isAudioFile = /\.(mp3|wav|ogg|m4a|flac)$/i.test(songUrl.split(/[#?]/)[0]);
 
@@ -673,6 +693,40 @@ function renderProfileView(profile) {
   }
   if (retroSkin) retroSkin.style.display = 'none';
   if (statusText) statusText.innerText = 'STOPPED';
+  if (audioPlayBtn) audioPlayBtn.disabled = true;
+  if (audioStopBtn) audioStopBtn.disabled = true;
+  if (audioSongName) audioSongName.textContent = 'Unknown Track';
+  if (audioArtistName) audioArtistName.textContent = profile.displayName || `@${profile.username}`;
+  if (audioTimeCurrent) audioTimeCurrent.textContent = '0:00';
+  if (audioTimeDuration) audioTimeDuration.textContent = '0:00';
+  if (audioTimestampStart) audioTimestampStart.textContent = '00:00';
+  if (audioTimestampEnd) audioTimestampEnd.textContent = '00:00';
+  if (audioProgressFill) audioProgressFill.style.width = '0%';
+
+  const updateAudioTimeline = () => {
+    if (!audioPlayer) return;
+    const current = Number.isFinite(audioPlayer.currentTime) ? audioPlayer.currentTime : 0;
+    const duration = Number.isFinite(audioPlayer.duration) ? audioPlayer.duration : 0;
+    const percent = duration > 0 ? Math.min((current / duration) * 100, 100) : 0;
+    if (audioTimeCurrent) audioTimeCurrent.textContent = formatAudioTime(current);
+    if (audioTimeDuration) audioTimeDuration.textContent = formatAudioTime(duration);
+    if (audioTimestampStart) audioTimestampStart.textContent = '00:00';
+    if (audioTimestampEnd) audioTimestampEnd.textContent = formatAudioTime(duration);
+    if (audioProgressFill) audioProgressFill.style.width = `${percent}%`;
+  };
+
+  if (audioPlayer) {
+    audioPlayer.onplay = () => { if (statusText) statusText.innerText = 'PLAYING...'; };
+    audioPlayer.onended = () => { if (statusText) statusText.innerText = 'ENDED'; };
+    audioPlayer.onpause = () => {
+      if (!statusText) return;
+      statusText.innerText = audioPlayer.currentTime > 0 && !audioPlayer.ended ? 'PAUSED' : 'STOPPED';
+    };
+    audioPlayer.onwaiting = () => { if (statusText) statusText.innerText = 'BUFFERING...'; };
+    audioPlayer.ontimeupdate = updateAudioTimeline;
+    audioPlayer.onloadedmetadata = updateAudioTimeline;
+    audioPlayer.ondurationchange = updateAudioTimeline;
+  }
 
   // Build Profile Link
   const profileLink = document.createElement('a');
@@ -705,10 +759,34 @@ function renderProfileView(profile) {
     links.appendChild(songLink);
 
     if (audioPlayer) {
+      const trackName = String(profile.songTitle || '').trim() || 'Unknown Track';
+      const artistName = String(profile.songArtist || '').trim() || profile.displayName || `@${profile.username}`;
+      if (audioSongName) audioSongName.textContent = trackName;
+      if (audioArtistName) audioArtistName.textContent = artistName;
+
       audioPlayer.src = songUrl;
       audioPlayer.load();
       if (retroSkin) retroSkin.style.display = 'block';
-      if (statusText) statusText.innerText = 'PLAYING...';
+      if (audioPlayBtn) {
+        audioPlayBtn.disabled = false;
+        audioPlayBtn.onclick = () => {
+          audioPlayer.play().catch(err => {
+            console.log("Autoplay blocked:", err);
+            if (statusText) statusText.innerText = 'PAUSED';
+          });
+        };
+      }
+      if (audioStopBtn) {
+        audioStopBtn.disabled = false;
+        audioStopBtn.onclick = () => {
+          audioPlayer.pause();
+          audioPlayer.currentTime = 0;
+          if (statusText) statusText.innerText = 'STOPPED';
+          updateAudioTimeline();
+        };
+      }
+      if (statusText) statusText.innerText = 'LOADING...';
+      updateAudioTimeline();
       
       audioPlayer.play().catch(err => {
         console.log("Autoplay blocked:", err);
@@ -778,6 +856,8 @@ function fillProfileSettings(profile) {
   const displayName = document.getElementById('profile-display-name');
   const pronouns = document.getElementById('profile-pronouns');
   const songUrl = document.getElementById('profile-song-url');
+  const songTitle = document.getElementById('profile-song-title');
+  const songArtist = document.getElementById('profile-song-artist');
   const imageUrl = document.getElementById('profile-image-url');
   const imageStatus = document.getElementById('profile-image-request-status');
   const bio = document.getElementById('profile-bio');
@@ -787,6 +867,8 @@ function fillProfileSettings(profile) {
   if (displayName) displayName.value = profile.displayName || '';
   if (pronouns) pronouns.value = profile.pronouns || '';
   if (songUrl) songUrl.value = profile.songUrl || '';
+  if (songTitle) songTitle.value = profile.songTitle || '';
+  if (songArtist) songArtist.value = profile.songArtist || '';
   if (imageUrl) imageUrl.value = profile.profileImageRequestedUrl || profile.profileImageUrl || '';
   if (imageStatus) imageStatus.textContent = profileImageHintFromStatus(profile);
   if (bio) bio.value = profile.bio || '';
@@ -1240,6 +1322,8 @@ window.saveProfileSettings = async function () {
   const pronouns = document.getElementById('profile-pronouns')?.value.trim() || '';
   const bio = document.getElementById('profile-bio')?.value.trim() || '';
   const songUrlInput = document.getElementById('profile-song-url')?.value.trim() || '';
+  const songTitle = document.getElementById('profile-song-title')?.value.trim() || '';
+  const songArtist = document.getElementById('profile-song-artist')?.value.trim() || '';
   const songUrl = normalizeSongUrl(songUrlInput);
   const profileImageInput = document.getElementById('profile-image-url')?.value.trim() || '';
   const requestedImageUrl = normalizeHttpUrl(profileImageInput);
@@ -1247,7 +1331,7 @@ window.saveProfileSettings = async function () {
   const profileThemeColors = readThemeInputValues(profileThemePreset);
 
   if (songUrlInput && !songUrl) {
-    setUsersMessage('Background song must be a valid YouTube URL.', true);
+    setUsersMessage('Background song must be a valid YouTube or direct audio URL.', true);
     return;
   }
 
@@ -1302,6 +1386,8 @@ window.saveProfileSettings = async function () {
       pronouns,
       bio,
       songUrl,
+      songTitle,
+      songArtist,
       profileImageUrl,
       profileImageRequestedUrl,
       profileImageStatus,
@@ -1323,6 +1409,8 @@ window.saveProfileSettings = async function () {
       pronouns,
       bio,
       songUrl,
+      songTitle,
+      songArtist,
       profileImageUrl,
       profileImageRequestedUrl,
       profileImageStatus,
@@ -1372,6 +1460,8 @@ window.registerUser = async function () {
       bio: '',
       pronouns: '',
       songUrl: '',
+      songTitle: '',
+      songArtist: '',
       profileImageUrl: '',
       profileImageRequestedUrl: '',
       profileImageStatus: 'none',

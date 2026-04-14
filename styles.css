@@ -718,6 +718,177 @@ body {
     background: #000;
 }
 
+.win95-media-player {
+    margin-top: 8px;
+    border: 2px solid;
+    border-color: #fff #808080 #808080 #fff;
+    background: #c0c0c0;
+    box-shadow: inset 1px 1px 0 #dfdfdf;
+}
+
+.win95-media-player .player-titlebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 3px 4px;
+    background: linear-gradient(90deg, #000080 0%, #1d54b8 72%, #5b86d9 100%);
+    color: #fff;
+    font-family: Tahoma, "MS Sans Serif", sans-serif;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 0.2px;
+}
+
+.win95-media-player .player-title-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.win95-media-player .player-title-buttons {
+    display: flex;
+    gap: 2px;
+}
+
+.win95-media-player .title-btn-glyph {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    color: #000;
+    background: #c0c0c0;
+    border: 1px solid;
+    border-color: #fff #5f5f5f #5f5f5f #fff;
+    font-size: 10px;
+    line-height: 1;
+    font-weight: bold;
+}
+
+.win95-media-player .player-body {
+    padding: 8px;
+    border-top: 1px solid #fff;
+}
+
+.win95-media-player .player-display {
+    border: 2px solid;
+    border-color: #808080 #fff #fff #808080;
+    background: #000;
+    color: #15ff00;
+    font-family: "Lucida Console", "Courier New", monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 7px 8px;
+    min-height: 30px;
+    display: flex;
+    align-items: center;
+    text-shadow: 0 0 5px rgba(21, 255, 0, 0.5);
+}
+
+.win95-media-player .status-marquee {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.win95-media-player .player-meta-grid {
+    margin-top: 7px;
+    border: 2px solid;
+    border-color: #808080 #fff #fff #808080;
+    background: #d4d0c8;
+    padding: 4px 6px;
+    display: grid;
+    gap: 3px;
+    font-family: Tahoma, "MS Sans Serif", sans-serif;
+    font-size: 11px;
+    color: #111;
+}
+
+.win95-media-player .player-meta-row {
+    display: grid;
+    grid-template-columns: 42px 1fr;
+    gap: 6px;
+    align-items: center;
+    min-width: 0;
+}
+
+.win95-media-player .player-meta-label {
+    color: #2d2d2d;
+    font-weight: bold;
+}
+
+.win95-media-player .player-meta-value {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.win95-media-player .player-time-row {
+    margin-top: 7px;
+    display: flex;
+    justify-content: space-between;
+    font-family: "Lucida Console", "Courier New", monospace;
+    font-size: 11px;
+    color: #111;
+}
+
+.win95-media-player .player-progress-track {
+    margin-top: 4px;
+    height: 12px;
+    border: 2px solid;
+    border-color: #808080 #fff #fff #808080;
+    background: #efefef;
+    overflow: hidden;
+}
+
+.win95-media-player .player-progress-fill {
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, #000080 0%, #1d54b8 100%);
+}
+
+.win95-media-player .player-timestamps {
+    margin-top: 3px;
+    display: flex;
+    justify-content: space-between;
+    font-family: "Lucida Console", "Courier New", monospace;
+    font-size: 10px;
+    color: #333;
+}
+
+.win95-media-player .player-controls {
+    margin-top: 8px;
+    display: flex;
+    gap: 6px;
+}
+
+.win95-media-player .win-btn-small {
+    border: 2px solid;
+    border-color: #fff #808080 #808080 #fff;
+    background: #c0c0c0;
+    color: #000;
+    font-family: Tahoma, "MS Sans Serif", sans-serif;
+    font-size: 11px;
+    min-width: 74px;
+    padding: 3px 8px;
+    cursor: pointer;
+    box-shadow: inset 1px 1px 0 #dfdfdf;
+}
+
+.win95-media-player .win-btn-small:active {
+    border-color: #808080 #fff #fff #808080;
+    box-shadow: none;
+    transform: translate(1px, 1px);
+}
+
+.win95-media-player .win-btn-small:disabled {
+    color: #6f6f6f;
+    text-shadow: 1px 1px 0 #fff;
+    cursor: default;
+}
+
 @media (max-width: 760px) {
     .users-layout {
         grid-template-columns: 1fr;

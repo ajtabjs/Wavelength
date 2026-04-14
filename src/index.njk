@@ -264,6 +264,16 @@ permalink: /index.html
                       </div>
 
                       <div class="users-auth-group">
+                        <label for="profile-song-title">Song title</label>
+                        <input id="profile-song-title" class="chat-input-field" type="text" maxlength="80" placeholder="Track name shown on your profile player">
+                      </div>
+
+                      <div class="users-auth-group">
+                        <label for="profile-song-artist">Song artist</label>
+                        <input id="profile-song-artist" class="chat-input-field" type="text" maxlength="80" placeholder="Artist name shown on your profile player">
+                      </div>
+
+                      <div class="users-auth-group">
                         <label for="profile-image-url">Profile image URL (requires approval)</label>
                         <input id="profile-image-url" class="chat-input-field" type="url" maxlength="500" placeholder="https://example.com/avatar.png">
                         <div id="profile-image-request-status" class="users-profile-hint"></div>
@@ -359,12 +369,43 @@ permalink: /index.html
                         <iframe id="profile-song-player" class="profile-song-player" allowfullscreen title="Profile song player" style="display:none;"></iframe>
 
                         <div id="retro-audio-skin" class="win95-media-player" style="display:none;">
-                          <div class="player-display">
-                            <div id="audio-status-text" class="status-marquee">READY</div>
+                          <div class="player-titlebar">
+                            <span class="player-title-text">Windows Media Player</span>
+                            <div class="player-title-buttons" aria-hidden="true">
+                              <span class="title-btn-glyph">_</span>
+                              <span class="title-btn-glyph">&#9633;</span>
+                              <span class="title-btn-glyph">&#10005;</span>
+                            </div>
                           </div>
-                          <div class="player-controls">
-                            <button class="win-btn-small" onclick="document.getElementById('profile-audio-player').play()"><span>Play</span></button>
-                            <button class="win-btn-small" onclick="document.getElementById('profile-audio-player').pause()"><span>Stop</span></button>
+                          <div class="player-body">
+                            <div class="player-display">
+                              <div id="audio-status-text" class="status-marquee">READY</div>
+                            </div>
+                            <div class="player-meta-grid">
+                              <div class="player-meta-row">
+                                <span class="player-meta-label">Song:</span>
+                                <span id="audio-song-name" class="player-meta-value">Unknown Track</span>
+                              </div>
+                              <div class="player-meta-row">
+                                <span class="player-meta-label">Artist:</span>
+                                <span id="audio-artist-name" class="player-meta-value">Unknown Artist</span>
+                              </div>
+                            </div>
+                            <div class="player-time-row">
+                              <span id="audio-time-current">0:00</span>
+                              <span id="audio-time-duration">0:00</span>
+                            </div>
+                            <div class="player-progress-track" aria-hidden="true">
+                              <div id="audio-progress-fill" class="player-progress-fill"></div>
+                            </div>
+                            <div class="player-timestamps">
+                              <span id="audio-timestamp-start">00:00</span>
+                              <span id="audio-timestamp-end">00:00</span>
+                            </div>
+                            <div class="player-controls">
+                              <button id="profile-audio-play-btn" class="win-btn-small" type="button"><span>&#9654; Play</span></button>
+                              <button id="profile-audio-stop-btn" class="win-btn-small" type="button"><span>&#9632; Stop</span></button>
+                            </div>
                           </div>
                           <audio id="profile-audio-player" style="display:none;"></audio>
                         </div>
