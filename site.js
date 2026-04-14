@@ -274,14 +274,13 @@ function colorLuminance(hex) {
   return ((0.2126 * r) + (0.7152 * g) + (0.0722 * b)) / 255;
 }
 
-function applyGlobalBackground(colors) {
-  const start = normalizeHexColor(colors?.bgStart) || '#008080';
-  const end = normalizeHexColor(colors?.bgEnd) || '#008080';
-  const isDark = colorLuminance(end) < 0.45;
+function applyGlobalBackground(barColor) {
+  const base = normalizeHexColor(barColor) || '#008080';
+  const isDark = colorLuminance(base) < 0.45;
   const grid = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.07)';
   const root = document.documentElement;
-  root.style.setProperty('--theme-body-start', start);
-  root.style.setProperty('--theme-body-end', end);
+  root.style.setProperty('--theme-body-start', base);
+  root.style.setProperty('--theme-body-end', base);
   root.style.setProperty('--theme-body-grid', grid);
 }
 
@@ -607,7 +606,7 @@ function renderProfileView(profile) {
 
   const theme = profileThemeFromData(profile);
   applyGlobalBarColor(theme.colors.bar);
-  applyGlobalBackground(theme.colors);
+  applyGlobalBackground(theme.colors.bar);
 
   if (card) {
     card.style.setProperty('--profile-accent', theme.colors.accent);
