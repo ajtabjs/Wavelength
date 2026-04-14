@@ -1,4 +1,4 @@
-// site.js - Complete merged version
+// site.js - Complete merged version (conflicts resolved)
 
 import { initializeApp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -106,6 +106,12 @@ function youtubeEmbedUrl(songUrl) {
   } catch {
     return '';
   }
+}
+
+function normalizeSongUrl(songUrl) {
+  const embedUrl = youtubeEmbedUrl(songUrl);
+  if (!embedUrl) return '';
+  return embedUrl.replace('/embed/', '/watch?v=');
 }
 
 function profileFromAccountData(data) {
@@ -238,16 +244,18 @@ async function ensureBadgeConfigLoaded() {
 window.switchTab = function switchTab(name, e) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  const panel = document.getElementById('tab-' + name);
-  if (panel) panel.classList.add('active');
-  
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name !== 'profile') {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('profile');
+    history.replaceState({}, '', url);
+  }
   if (e && e.target) {
     e.target.classList.add('active');
   } else {
     const tabButton = document.querySelector(`.tab[data-tab="${name}"]`);
     if (tabButton) tabButton.classList.add('active');
   }
-  
   if (name === 'chat') {
     if (window.openChatTab) {
       window.openChatTab();
@@ -315,6 +323,36 @@ async function refreshFirestoreAdminStatus() {
   currentUserCanModerateChat = currentUserIsFirestoreAdmin;
 }
 
+function chatTimeoutLabel(untilMs) {
+  return new Date(untilMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function isCurrentUserTimedOut() {
+  return currentTimeoutUntilMs > Date.now();
+}
+
+function updateChatInputState() {
+  const input = document.getElementById('chat-msg-input');
+  const btn = document.querySelector('.chat-footer .win-btn');
+  if (!input || !btn) return;
+
+  const defaultPlaceholder = input.dataset.defaultPlaceholder || input.placeholder || 'type a message...';
+  input.dataset.defaultPlaceholder = defaultPlaceholder;
+
+  if (isCurrentUserTimedOut()) {
+    input.disabled = true;
+    btn.disabled = true;
+    input.placeholder = `timed out until ${chatTimeoutLabel(currentTimeoutUntilMs)}`;
+    return;
+  }
+
+  if (input.dataset.cooldownActive === '1') return;
+
+  input.disabled = false;
+  btn.disabled = false;
+  input.placeholder = defaultPlaceholder;
+}
+
 async function updateChatLinkUI() {
   const linkStatus = document.getElementById('chat-link-status');
   const linkBtn = document.getElementById('chat-link-btn');
@@ -378,7 +416,7 @@ function renderProfileView(profile) {
   const badgesWrap = document.getElementById('profile-badges-view');
   const imageNote = document.getElementById('profile-image-note-view');
 
-  if (!view) return;
+  if (!view || !links || !songWrap || !songPlayer || !avatar || !avatarFallback || !badgesWrap || !imageNote) return;
 
   const displayNameEl = document.getElementById('profile-display-name-view');
   const usernameEl = document.getElementById('profile-username-view');
@@ -437,7 +475,7 @@ function renderProfileView(profile) {
     links.appendChild(profileLink);
 
     const songEmbed = youtubeEmbedUrl(profile.songUrl);
-    if (songEmbed && songPlayer && songWrap) {
+    if (songEmbed) {
       const songLink = document.createElement('a');
       songLink.className = 'profile-link-btn';
       songLink.href = profile.songUrl;
@@ -446,15 +484,15 @@ function renderProfileView(profile) {
       songLink.textContent = 'Background song (YouTube)';
       links.appendChild(songLink);
 
-      songPlayer.src = songEmbed;
-      songWrap.style.display = 'block';
-    } else if (songWrap) {
+      if (songPlayer) songPlayer.src = songEmbed;
+      if (songWrap) songWrap.style.display = 'block';
+    } else {
       if (songPlayer) songPlayer.removeAttribute('src');
-      songWrap.style.display = 'none';
+      if (songWrap) songWrap.style.display = 'none';
     }
   }
 
-  view.style.display = 'block';
+  if (view) view.style.display = 'block';
   setProfileStatus('');
 }
 
@@ -616,36 +654,6 @@ function startSendCooldown() {
   }, 1000);
 }
 
-function updateChatInputState() {
-  const input = document.getElementById('chat-msg-input');
-  const btn = document.querySelector('.chat-footer .win-btn');
-  if (!input || !btn) return;
-
-  const defaultPlaceholder = input.dataset.defaultPlaceholder || input.placeholder || 'type a message...';
-  input.dataset.defaultPlaceholder = defaultPlaceholder;
-
-  if (isCurrentUserTimedOut()) {
-    input.disabled = true;
-    btn.disabled = true;
-    input.placeholder = `timed out until ${chatTimeoutLabel(currentTimeoutUntilMs)}`;
-    return;
-  }
-
-  if (input.dataset.cooldownActive === '1') return;
-
-  input.disabled = false;
-  btn.disabled = false;
-  input.placeholder = defaultPlaceholder;
-}
-
-function chatTimeoutLabel(untilMs) {
-  return new Date(untilMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-function isCurrentUserTimedOut() {
-  return currentTimeoutUntilMs > Date.now();
-}
-
 let badWordMatchers = [];
 
 function escapeRegex(text) {
@@ -672,7 +680,6 @@ fetch('./assets/badwords.txt')
       .filter(Boolean);
   })
   .catch(() => {
-    // If badwords.txt doesn't load, use a default empty array
     badWordMatchers = [];
   });
 
@@ -724,7 +731,7 @@ function renderMessage(docSnap) {
     `<span class="msg-user">${esc(data.user)}</span>` +
     `<span class="msg-time">${time}</span>` +
     `<span class="msg-text">${esc(data.text)}</span>` +
-    (canDelete ? `<button class="msg-del" title="delete" onclick="deleteMsg('${docSnap.id}', '${data.uid || ''}')">✕</button>` : '');
+    (canDelete ? `<button class="msg-del" title="delete" onclick="window.deleteMsg('${docSnap.id}', '${data.uid || ''}')">✕</button>` : '');
 
   const box = document.getElementById('chat-messages');
   if (box) box.appendChild(el);
@@ -974,7 +981,7 @@ window.saveProfileSettings = async function () {
   const pronouns = document.getElementById('profile-pronouns')?.value.trim() || '';
   const bio = document.getElementById('profile-bio')?.value.trim() || '';
   const songUrlInput = document.getElementById('profile-song-url')?.value.trim() || '';
-  const songUrl = youtubeEmbedUrl(songUrlInput);
+  const songUrl = normalizeSongUrl(songUrlInput);
   const profileImageInput = document.getElementById('profile-image-url')?.value.trim() || '';
   const requestedImageUrl = normalizeHttpUrl(profileImageInput);
 
@@ -1227,6 +1234,10 @@ onAuthStateChanged(auth, async user => {
     statusEl.textContent = 'Not logged in.';
     helloEl.textContent = '';
     setUsersAuthUI(false);
+    if (currentUser) {
+      const timeoutBtn = document.getElementById('chat-timeout-btn');
+      if (timeoutBtn) timeoutBtn.style.display = 'none';
+    }
     await updateChatLinkUI();
     return;
   }
