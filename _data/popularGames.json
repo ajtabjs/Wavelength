@@ -6,6 +6,6 @@
   { "slug": "mcpe", "type": "webPorts" },
   { "slug": "ntte", "type": "ruffle" },
   { "slug": "stardew", "type": "webPorts" },
-  { "slug":"", "type": "webPorts"}
+  { "slug": "pvz-fusion", "type": "webPorts"}
   
 ]
