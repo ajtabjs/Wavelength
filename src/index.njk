@@ -530,6 +530,7 @@ permalink: /index.html
       window.__JSDELIVR_URLS__ = {{ jsdelivr | dump | safe }};
       window.__GITHACK_URLS__  = {{ githack | dump | safe }};
       window.__CREDITS_MAPPING__ = {{ creditsMapping | dump | safe }};
+      window.__BADGE_CONFIG__ = {{ profileBadges | dump | safe }};
       window.__POPULAR_GAMES__ = {{ popularGames | dump | safe }};
       window.__GAMES_DATA__ = [
         {% for g in htmlGames %}

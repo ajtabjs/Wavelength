@@ -1051,17 +1051,54 @@ function renderMessage(docSnap) {
   const data = docSnap.data();
   const isMine = data.uid === uid;
   const canDelete = isMine || currentUserCanModerateChat;
+  const username = String(data.user || '').trim() || 'user';
+  const badges = badgesForUsername(username);
   const time = data.time?.toDate
     ? data.time.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : '';
 
   const el = document.createElement('div');
   el.className = 'chat-msg' + (isMine ? ' chat-msg-mine' : '');
-  el.innerHTML =
-    `<span class="msg-user">${esc(data.user)}</span>` +
-    `<span class="msg-time">${time}</span>` +
-    `<span class="msg-text">${esc(data.text)}</span>` +
-    (canDelete ? `<button class="msg-del" title="delete" onclick="window.deleteMsg('${docSnap.id}', '${data.uid || ''}')">✕</button>` : '');
+
+  const userMeta = document.createElement('span');
+  userMeta.className = 'msg-user-meta';
+
+  const userEl = document.createElement('span');
+  userEl.className = 'msg-user';
+  userEl.textContent = username;
+  userMeta.appendChild(userEl);
+
+  if (badges.length) {
+    const badgesWrap = document.createElement('span');
+    badgesWrap.className = 'msg-badges';
+    badges.forEach((badge) => {
+      badgesWrap.appendChild(buildBadgeElement(badge, 'chat-badge'));
+    });
+    userMeta.appendChild(badgesWrap);
+  }
+
+  const timeEl = document.createElement('span');
+  timeEl.className = 'msg-time';
+  timeEl.textContent = time;
+
+  const textEl = document.createElement('span');
+  textEl.className = 'msg-text';
+  textEl.textContent = String(data.text || '');
+
+  el.appendChild(userMeta);
+  el.appendChild(timeEl);
+  el.appendChild(textEl);
+
+  if (canDelete) {
+    const delBtn = document.createElement('button');
+    delBtn.className = 'msg-del';
+    delBtn.title = 'delete';
+    delBtn.textContent = '✕';
+    delBtn.addEventListener('click', () => {
+      window.deleteMsg(docSnap.id, String(data.uid || ''));
+    });
+    el.appendChild(delBtn);
+  }
 
   const box = document.getElementById('chat-messages');
   if (box) box.appendChild(el);

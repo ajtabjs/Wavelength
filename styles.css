@@ -327,7 +327,40 @@ body {
     border-bottom: 1px dotted #ddd;
 }
 
+.msg-user-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
 .msg-user  { font-weight: bold; color: #000080; white-space: nowrap; }
+.msg-badges {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+.chat-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 14px;
+    height: 14px;
+    border: 1px solid #808080;
+    background: #f3f3f3;
+    cursor: help;
+}
+.chat-badge-img {
+    width: 10px;
+    height: 10px;
+    object-fit: contain;
+}
+.chat-badge-text {
+    font-size: 8px;
+    line-height: 1;
+    padding: 0 1px;
+}
 .msg-time  { font-size: 9px; color: #888; white-space: nowrap; }
 .msg-text  { color: #222; flex: 1; word-break: break-word; }
 
@@ -340,6 +373,33 @@ body {
     cursor: pointer; opacity: 0.4; padding: 0 2px;
 }
 .msg-del:hover { opacity: 1; }
+
+.chat-badge::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 6px);
+    transform: translateX(-50%);
+    border: 1px solid #808080;
+    background: #ffffe1;
+    color: #111;
+    padding: 4px 6px;
+    font-size: 10px;
+    line-height: 1.2;
+    white-space: nowrap;
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.12s ease;
+    z-index: 20;
+}
+
+.chat-badge:hover::after,
+.chat-badge:focus-visible::after {
+    opacity: 1;
+    visibility: visible;
+}
 
 .chat-footer {
     display: flex; gap: 4px;
