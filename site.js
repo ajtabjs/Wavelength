@@ -135,14 +135,23 @@ const PROFILE_THEME_PRESETS = {
     panelBg: '#ffffff',
     bar: '#000080'
   },
-  ocean: {
-    accent: '#0b5394',
-    bgStart: '#e8f4ff',
-    bgEnd: '#cfe8ff',
-    text: '#0f172a',
-    textMuted: '#334155',
+  'pydra-light': {
+    accent: '#2596be',
+    bgStart: '#e0f7ff',
+    bgEnd: '#81d4fa',
+    text: '#2c3e50',
+    textMuted: '#4b647a',
     panelBg: '#ffffff',
-    bar: '#0b5394'
+    bar: '#2596be'
+  },
+  'pydra-dark': {
+    accent: '#2eb0df',
+    bgStart: '#0a0a0a',
+    bgEnd: '#141414',
+    text: '#ffffff',
+    textMuted: '#b0b0b0',
+    panelBg: '#2a2a2a',
+    bar: '#00d9ff'
   },
   sunset: {
     accent: '#c2410c',
@@ -184,6 +193,7 @@ const PROFILE_THEME_PRESETS = {
 
 function normalizeThemePreset(value) {
   const preset = String(value || '').trim().toLowerCase();
+  if (preset === 'ocean') return 'pydra-light';
   if (!preset || !PROFILE_THEME_PRESETS[preset]) return 'classic';
   return preset;
 }
