@@ -5,5 +5,7 @@
   { "slug": "raldi", "type": "webPorts" },
   { "slug": "mcpe", "type": "webPorts" },
   { "slug": "ntte", "type": "ruffle" },
-  { "slug": "adgac", "type": "webPorts" }
+  { "slug": "stardew", "type": "webPorts" },
+  { "slug":"", "type": "webPorts"}
+  
 ]
