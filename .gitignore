@@ -26,3 +26,4 @@ bfg.jar
 output/
 *.har
 wgettemp.txt
+firestore.rules

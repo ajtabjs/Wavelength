@@ -27,12 +27,13 @@ permalink: /index.html
         </div>
 
         <nav class="tabs">
-            <button class="tab active" onclick="switchTab('home', event)">[ home ]</button>
-            <button class="tab" onclick="switchTab('games', event)">[ games ]</button>
-            <button class="tab" onclick="switchTab('chat', event)">[ chat ]</button>
-          <button class="tab" onclick="switchTab('users', event)">[ users ]</button>
-            <button class="tab" onclick="switchTab('shop', event)">[ shop ]</button>
-            <button class="tab" onclick="switchTab('credits', event)">[ credits ]</button>
+            <button class="tab active" data-tab="home" onclick="switchTab('home', event)">[ home ]</button>
+            <button class="tab" data-tab="games" onclick="switchTab('games', event)">[ games ]</button>
+            <button class="tab" data-tab="chat" onclick="switchTab('chat', event)">[ chat ]</button>
+          <button class="tab" data-tab="users" onclick="switchTab('users', event)">[ users ]</button>
+            <button class="tab" data-tab="profile" onclick="switchTab('profile', event)">[ profile ]</button>
+            <button class="tab" data-tab="shop" onclick="switchTab('shop', event)">[ shop ]</button>
+            <button class="tab" data-tab="credits" onclick="switchTab('credits', event)">[ credits ]</button>
         </nav>
 
         <div class="content">
@@ -50,13 +51,27 @@ permalink: /index.html
                               </p>
                               <p>This website is open source, so feel free to contribute for anything we don't have!<p>
                               <a href="https://github.com/ki-krpto/Wavelength" target="_blank"> <img src="./assets/badges/github.png"></a>
+                              <a href="https://discord.gg/Yav59M7Hfn" target="_blank"><img src="./assets/badges/discord.png"></a>
                           </div>
                       </div>
+                      
                   </div>
                   <div class="panel">
                       <div class="panel-header">&#9670; Changelog</div>
                       <div class="panel-body">
                           <div class="changelog">
+                            <div class="log-entry">
+                            <div class="log-date">April 13th, 2026</div>
+                            <div class="log-title">user profiles and new domain!</div>
+                            <div class="log-desc">we are now up at <a href="https://wavelength.rip" target="_blank">wavelength.rip</a> (thanks to thatoneperson!) + we have user profiles now for y'all that requested it! have fun <3 ~ aj<br> (the domain cost $5 this year and it's going to be $20 the next so donate pretty please)</div>
+                            <span class="tag tag-new">new</span>
+                          </div>
+                          <div class="log-entry">
+                            <div class="log-date">April 12th, 2026</div>
+                            <div class="log-title">added terraria and stardew valley</div>
+                            <div class="log-desc">uh yeah very swag, have fun! ~ aj</div>
+                            <span class="tag tag-new">new</span>
+                          </div>
   <div class="log-entry">
                             <div class="log-date">April 10th, 2026 - 3:08pm</div>
                             <div class="log-title">added user accounts</div>
@@ -103,6 +118,10 @@ permalink: /index.html
                       </div>
                   </div>
               </div>
+                  <div class="dmca-footer">
+              <button class="win-btn dmca-footer-btn" onclick="document.getElementById('dmca-modal').style.display='flex'">[ dmca ]</button>
+            </div>
+
             </div>
 
             <!-- GAMES -->
@@ -185,6 +204,7 @@ permalink: /index.html
                     &#9670; Chat &nbsp;<span id="chat-user-label" style="font-weight:normal;font-size:10px;opacity:0.85;"></span>
                     <span id="chat-link-status" style="font-weight:normal;font-size:10px;opacity:0.85;margin-left:8px;"></span>
                     <button id="chat-link-btn" onclick="linkChatToAccount()" class="win-btn" style="display:none;font-size:9px; margin-left:10px; padding: 2px 5px;">[ LINK ACCOUNT ]</button>
+                    <button id="chat-timeout-btn" onclick="timeoutUserByName()" class="win-btn" style="display:none;font-size:9px; margin-left:10px; padding: 2px 5px;">[ TIMEOUT USER ]</button>
                     <button onclick="changeUsername()" class="win-btn" style="font-size:9px; margin-left:10px; padding: 2px 5px;">[ CHANGE NAME ]</button>
                   </div>
                   <div class="panel-body" style="padding:0;display:flex;flex-direction:column;height:68vh;">
@@ -228,7 +248,46 @@ permalink: /index.html
 
                     <div id="users-auth-logged-in" style="display:none;">
                       <div class="users-auth-hello" id="users-auth-hello"></div>
-                      <button class="win-btn" onclick="logoutUser()">[ LOG OUT ]</button>
+                      <div class="users-auth-actions">
+                        <button class="win-btn" onclick="openProfileSettings()">[ SETTINGS ]</button>
+                        <button class="win-btn" onclick="openMyProfile()">[ VIEW PROFILE ]</button>
+                        <button class="win-btn" onclick="logoutUser()">[ LOG OUT ]</button>
+                      </div>
+                    </div>
+
+                    <div id="users-settings" class="users-settings" style="display:none;">
+                      <div class="users-settings-title">Customize your profile</div>
+
+                      <div class="users-auth-group">
+                        <label for="profile-display-name">Display name</label>
+                        <input id="profile-display-name" class="chat-input-field" type="text" maxlength="40" placeholder="how your profile name appears">
+                      </div>
+
+                      <div class="users-auth-group">
+                        <label for="profile-pronouns">Pronouns</label>
+                        <input id="profile-pronouns" class="chat-input-field" type="text" maxlength="40" placeholder="e.g. he/him, she/her, they/them">
+                      </div>
+
+                      <div class="users-auth-group">
+                        <label for="profile-song-url">Background song (YouTube link)</label>
+                        <input id="profile-song-url" class="chat-input-field" type="url" maxlength="300" placeholder="https://www.youtube.com/watch?v=...">
+                      </div>
+
+                      <div class="users-auth-group">
+                        <label for="profile-image-url">Profile image URL (requires approval)</label>
+                        <input id="profile-image-url" class="chat-input-field" type="url" maxlength="500" placeholder="https://example.com/avatar.png">
+                        <div id="profile-image-request-status" class="users-profile-hint"></div>
+                      </div>
+
+                      <div class="users-auth-group">
+                        <label for="profile-bio">Bio / About</label>
+                        <textarea id="profile-bio" class="users-profile-textarea" maxlength="280" placeholder="write something about yourself..."></textarea>
+                      </div>
+
+                      <div class="users-auth-actions">
+                        <button class="win-btn" onclick="saveProfileSettings()">[ SAVE ]</button>
+                        <button class="win-btn" onclick="closeProfileSettings()">[ CLOSE ]</button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -238,6 +297,44 @@ permalink: /index.html
                   <div class="panel-body">
                     <div id="users-list-status" class="users-list-status">Loading users...</div>
                     <div id="users-list" class="users-list"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- PROFILE -->
+            <div id="tab-profile" class="tab-panel">
+              <div class="panel">
+                <div class="panel-header">&#9670; User Profile</div>
+                <div class="panel-body">
+                  <div id="profile-status" class="users-list-status">Select a user from the users list.</div>
+                  <div id="profile-view" class="profile-view" style="display:none;">
+                    <div class="profile-card">
+                      <div class="profile-card-header">
+                        <div class="profile-identity-wrap">
+                          <div class="profile-avatar-wrap" aria-hidden="true">
+                            <img id="profile-avatar-view" class="profile-avatar" alt="Profile avatar">
+                            <div id="profile-avatar-fallback" class="profile-avatar-fallback">?</div>
+                          </div>
+                          <div>
+                            <div class="profile-display-name" id="profile-display-name-view">Unknown</div>
+                            <div class="profile-username" id="profile-username-view">@unknown</div>
+                            <div class="profile-badges" id="profile-badges-view"></div>
+                          </div>
+                        </div>
+                        <div class="profile-pronouns" id="profile-pronouns-view"></div>
+                      </div>
+
+                      <div id="profile-image-note-view" class="users-profile-hint" style="display:none;"></div>
+
+                      <div class="profile-bio" id="profile-bio-view"></div>
+
+                      <div class="profile-links" id="profile-links"></div>
+
+                      <div id="profile-song-player-wrap" class="profile-song-player-wrap" style="display:none;">
+                        <iframe id="profile-song-player" class="profile-song-player" allowfullscreen title="Profile song player"></iframe>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -325,6 +422,24 @@ permalink: /index.html
       </div>
     </div>
 
+    <!-- DMCA MODAL -->
+    <div id="dmca-modal" class="modal-overlay" style="display:none;">
+      <div class="modal-box">
+        <button class="modal-close-btn" onclick="document.getElementById('dmca-modal').style.display='none'" aria-label="Close dialog">x</button>
+        <div class="panel-header">DMCA</div>
+        <div class="panel-body" style="padding:12px;">
+          <div class="dmca-body">
+            <p>If you own or developed a game that is on Wavelength and believe that your work has been used without permission, please email ajsw@waifu.club or ping ms.isosceles in the <a href="https://discord.gg/Yav59M7Hfn" target="_blank">discord server</a>.</p>
+         
+            <p class="dmca-note">If you are going to send an email, please include proof of ownership. thanks!</p>
+         
+          <div style="margin-top:12px;text-align:center;">
+            <button class="win-btn" onclick="document.getElementById('dmca-modal').style.display='none'">[ close ]</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     {# ═══════════════════════════════════════════════════════════════════
        ELEVENTY INJECTS GAME DATA HERE AT BUILD TIME
        Edit _data/htmlGames.json, ruffleGames.json, or webPorts.json to add games!
@@ -350,6 +465,7 @@ permalink: /index.html
 
     <script src="games-loader.js"></script>
     <script src="site.js" type="module"></script>
+
 
 </body>
 </html>
