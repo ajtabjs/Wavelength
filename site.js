@@ -1,4 +1,14 @@
-        // chat tab requested before firebase module was ready
+import { initializeApp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+         signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, onSnapshot,
+         query, orderBy, limit, deleteDoc, doc, 
+         serverTimestamp, getDoc, setDoc }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { firebaseConfig } from './firebase-config.js';
+// chat tab requested before firebase module was ready
       window._chatTabPending = false;
       window._usersTabPending = false;
 
