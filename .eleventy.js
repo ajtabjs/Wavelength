@@ -8,6 +8,7 @@ module.exports = function(eleventyConfig) {
   eleventyConfig.addPassthroughCopy("credits");
   eleventyConfig.addPassthroughCopy("firebase-config.js");
   eleventyConfig.addPassthroughCopy("src/assets");
+    eleventyConfig.addPassthroughCopy("mirror.js");
   
   // Make data available globally
   eleventyConfig.addGlobalData("baseUrls", require("./_data/baseUrls.json"));
