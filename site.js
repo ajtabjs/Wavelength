@@ -102,6 +102,11 @@ function initialsForProfile(profile) {
 }
 
 function profileImageHintFromStatus(profile) {
+  // Only show status to the profile owner
+  if (!currentAccount || !profile || !profile.uid || profile.uid !== currentAccount.uid) {
+    // Not the owner, show nothing
+    return '';
+  }
   if (profile.profileImageStatus === 'pending') {
     return 'Profile image update request is pending approval.';
   }
