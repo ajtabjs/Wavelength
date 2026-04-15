@@ -17,6 +17,12 @@
       "label": "well-known",
       "title": "well-known community member",
       "image": "./assets/badges/users/well-known.svg"
+    },
+     {
+      "id": "gay",
+      "label": "gay",
+      "title": "gay homeboy",
+      "image": "./assets/badges/users/gay.jpg"
     }
   ],
   "users": {
@@ -24,6 +30,7 @@
     "thatoneperson": ["co-owner"],
     "Itz_kire": ["co-owner"],
     "minodab492": ["co-owner"],
-    "December": ["moderator"]
+    "December": ["moderator"],
+    "nugget omnissiah": ["gay"]
   }
 }
