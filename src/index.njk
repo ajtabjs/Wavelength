@@ -30,7 +30,7 @@ permalink: /index.html
             <button class="tab active" data-tab="home" onclick="switchTab('home', event)">[ home ]</button>
             <button class="tab" data-tab="games" onclick="switchTab('games', event)">[ games ]</button>
             <button class="tab" data-tab="chat" onclick="switchTab('chat', event)">[ chat ]</button>
-          <button class="tab" data-tab="users" onclick="switchTab('users', event)">[ users ]</button>
+            <button class="tab" data-tab="users" onclick="switchTab('users', event)">[ users ]</button>
             <button class="tab" data-tab="profile" onclick="switchTab('profile', event)">[ profile ]</button>
             <button class="tab" data-tab="shop" onclick="switchTab('shop', event)">[ shop ]</button>
             <button class="tab" data-tab="credits" onclick="switchTab('credits', event)">[ credits ]</button>
@@ -71,7 +71,7 @@ permalink: /index.html
                             <div class="log-desc">uh yeah very swag, have fun! ~ aj</div>
                             <span class="tag tag-new">new</span>
                           </div>
-  <div class="log-entry">
+                          <div class="log-entry">
                             <div class="log-date">April 10th, 2026 - 3:08pm</div>
                             <div class="log-title">added user accounts</div>
                             <div class="log-desc">y'all can login and chat with your own accounts! <br> any vulgar account names will be deleted and by default you will be in as a guest, no account linked <br> otherwise have fun! ~ aj</div>
@@ -117,10 +117,9 @@ permalink: /index.html
                       </div>
                   </div>
               </div>
-                  <div class="dmca-footer">
-              <button class="win-btn dmca-footer-btn" onclick="document.getElementById('dmca-modal').style.display='flex'">[ dmca ]</button>
-            </div>
-
+              <div class="dmca-footer">
+                <button class="win-btn dmca-footer-btn" onclick="document.getElementById('dmca-modal').style.display='flex'">[ dmca ]</button>
+              </div>
             </div>
 
             <div id="tab-games" class="tab-panel">
@@ -429,6 +428,23 @@ permalink: /index.html
                   </div>
                 </div>
               </div>
+
+              <!-- ── Profile Comments ── -->
+              <div id="profile-comments-section" class="panel" style="margin-top:12px;display:none;">
+                <div class="panel-header">&#9670; Comments</div>
+                <div class="panel-body" style="padding:12px;">
+                  <div id="profile-comments-list" class="profile-comments-list"></div>
+                  <div id="profile-comments-auth-hint" class="users-profile-hint" style="margin-top:8px;"></div>
+                  <div id="profile-comment-form" style="display:none;margin-top:10px;">
+                    <textarea id="profile-comment-input" class="users-profile-textarea" maxlength="300"
+                      placeholder="leave a comment..." style="height:60px;"></textarea>
+                    <div style="margin-top:6px;">
+                      <button class="win-btn" onclick="submitProfileComment()">[ POST ]</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
             </div>
 
             <div id="tab-shop" class="tab-panel">
@@ -517,9 +533,8 @@ permalink: /index.html
         <div class="panel-body" style="padding:12px;">
           <div class="dmca-body">
             <p>If you own or developed a game that is on Wavelength and believe that your work has been used without permission, please email ajsw@waifu.club or ping ms.isosceles in the <a href="https://discord.gg/Yav59M7Hfn" target="_blank">discord server</a>.</p>
-         
             <p class="dmca-note">If you are going to send an email, please include proof of ownership. thanks!</p>
-         
+          </div>
           <div style="margin-top:12px;text-align:center;">
             <button class="win-btn" onclick="document.getElementById('dmca-modal').style.display='none'">[ close ]</button>
           </div>

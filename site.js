@@ -1,4 +1,4 @@
-// site.js - Complete merged version (conflicts resolved)
+// site.js - Complete merged version with profile comments
 
 import { initializeApp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -6,7 +6,7 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
          signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot,
-         query, orderBy, limit, deleteDoc, doc, 
+         query, orderBy, limit, deleteDoc, doc,
          serverTimestamp, getDoc, setDoc, getDocs, where }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { firebaseConfig } from './firebase-config.js';
@@ -39,6 +39,10 @@ const embeddedBadgeConfig = window.__BADGE_CONFIG__ || {};
 const embeddedProfileButtons = window.__PROFILE_BUTTON_ASSETS__ || [];
 const DEFAULT_UI_BAR_COLOR = '#000080';
 const MAX_PROFILE_BUTTONS = 150;
+
+// ── Profile Comments state ──────────────────────────────────────────
+let profileCommentsUnsubscribe = null;
+// window._currentProfileUid is set when a profile is loaded so submitProfileComment can use it
 
 // Utility functions
 function esc(s) {
@@ -519,6 +523,178 @@ async function ensureBadgeConfigLoaded() {
   }
 }
 
+// ── Profile Comments ────────────────────────────────────────────────
+
+function teardownCommentsListener() {
+  if (profileCommentsUnsubscribe) {
+    profileCommentsUnsubscribe();
+    profileCommentsUnsubscribe = null;
+  }
+}
+
+function renderCommentEntry(docSnap, profileUid, listEl) {
+  const data    = docSnap.data();
+  const isOwner = currentAccount && currentAccount.uid === data.authorUid;
+  const canDel  = isOwner || currentUserIsFirestoreAdmin;
+
+  const time = data.createdAt?.toDate
+    ? data.createdAt.toDate().toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })
+    : '';
+
+  const el = document.createElement('div');
+  el.className = 'profile-comment-entry';
+
+  const meta = document.createElement('div');
+  meta.className = 'profile-comment-meta';
+
+  const userLink = document.createElement('a');
+  userLink.className = 'profile-comment-author';
+  userLink.textContent = String(data.authorDisplayName || data.authorUsername || 'user').slice(0, 40);
+  userLink.href = `?profile=${encodeURIComponent(data.authorUsername || '')}#profile`;
+  userLink.addEventListener('click', e => {
+    e.preventDefault();
+    if (data.authorUsername) window.openProfileByUsername(data.authorUsername);
+  });
+
+  const timeEl = document.createElement('span');
+  timeEl.className = 'profile-comment-time';
+  timeEl.textContent = time;
+
+  meta.appendChild(userLink);
+  meta.appendChild(timeEl);
+
+  const body = document.createElement('div');
+  body.className = 'profile-comment-body';
+  body.textContent = String(data.text || '').slice(0, 300);
+
+  el.appendChild(meta);
+  el.appendChild(body);
+
+  if (canDel) {
+    const delBtn = document.createElement('button');
+    delBtn.className = 'msg-del';
+    delBtn.title = 'delete comment';
+    delBtn.textContent = '✕';
+    delBtn.addEventListener('click', async () => {
+      try {
+        await deleteDoc(doc(db, 'accounts', profileUid, 'profileComments', docSnap.id));
+      } catch {
+        // silently ignore delete errors
+      }
+    });
+    el.appendChild(delBtn);
+  }
+
+  listEl.appendChild(el);
+}
+
+async function startCommentsForProfile(targetUsername) {
+  const section = document.getElementById('profile-comments-section');
+  const listEl  = document.getElementById('profile-comments-list');
+  const hint    = document.getElementById('profile-comments-auth-hint');
+  const form    = document.getElementById('profile-comment-form');
+  const input   = document.getElementById('profile-comment-input');
+
+  if (!section || !listEl || !hint || !form) return;
+
+  // Tear down any previous listener before starting a new one
+  teardownCommentsListener();
+
+  listEl.innerHTML = '';
+  if (input) input.value = '';
+  section.style.display = 'block';
+
+  // Show/hide comment form based on login state
+  if (currentAccount) {
+    hint.textContent = '';
+    form.style.display = 'block';
+  } else {
+    hint.textContent = 'Log in to leave a comment.';
+    form.style.display = 'none';
+  }
+
+  // Resolve the profile's Firestore document uid from their username
+  const normalized = normalizeUsername(targetUsername);
+  let profileUid = null;
+  try {
+    const q = query(
+      collection(db, 'accounts'),
+      where('usernameLower', '==', normalized),
+      limit(1)
+    );
+    const snap = await getDocs(q);
+    if (!snap.empty) profileUid = snap.docs[0].id;
+  } catch {
+    listEl.innerHTML = '<div class="users-profile-hint">Could not load comments.</div>';
+    return;
+  }
+
+  if (!profileUid) {
+    listEl.innerHTML = '<div class="users-profile-hint">No comments yet.</div>';
+    return;
+  }
+
+  // Store for use by submitProfileComment
+  window._currentProfileUid = profileUid;
+
+  const commentsQuery = query(
+    collection(db, 'accounts', profileUid, 'profileComments'),
+    orderBy('createdAt', 'asc'),
+    limit(100)
+  );
+
+  profileCommentsUnsubscribe = onSnapshot(commentsQuery, snap => {
+    listEl.innerHTML = '';
+    if (snap.empty) {
+      listEl.innerHTML = '<div class="users-profile-hint">No comments yet. Be the first!</div>';
+      return;
+    }
+    snap.forEach(d => renderCommentEntry(d, profileUid, listEl));
+  }, () => {
+    listEl.innerHTML = '<div class="users-profile-hint">Could not load comments.</div>';
+  });
+}
+
+window.submitProfileComment = async function () {
+  if (!currentAccount) return;
+
+  const input = document.getElementById('profile-comment-input');
+  const text  = (input?.value || '').trim();
+  if (!text) return;
+  if (!window._currentProfileUid) return;
+
+  // Run through the same filter as chat
+  if (containsBlockedWord(text)) {
+    setUsersMessage('Comment contains blocked words.', true);
+    return;
+  }
+
+  const btn = document.querySelector('#profile-comment-form .win-btn');
+  if (btn) btn.disabled = true;
+
+  try {
+    const snap = await getDoc(doc(db, 'accounts', currentAccount.uid));
+    const data = snap.exists() ? snap.data() : {};
+
+    await addDoc(
+      collection(db, 'accounts', window._currentProfileUid, 'profileComments'),
+      {
+        text: filterText(text),
+        authorUid:         currentAccount.uid,
+        authorUsername:    String(data.username || '').trim(),
+        authorDisplayName: String(data.displayName || data.username || '').trim(),
+        createdAt:         serverTimestamp()
+      }
+    );
+
+    if (input) input.value = '';
+  } catch (err) {
+    setUsersMessage(err?.message || 'Could not post comment.', true);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+};
+
 // Tab switching
 window.switchTab = function switchTab(name, e) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -527,6 +703,10 @@ window.switchTab = function switchTab(name, e) {
   if (name !== 'profile') {
     resetGlobalBarColor();
     resetGlobalBackground();
+    // Tear down comments listener when navigating away from profile tab
+    teardownCommentsListener();
+    const section = document.getElementById('profile-comments-section');
+    if (section) section.style.display = 'none';
     const url = new URL(window.location.href);
     url.searchParams.delete('profile');
     history.replaceState({}, '', url);
@@ -677,6 +857,16 @@ function setProfileStatus(text, isError = false) {
   statusEl.classList.toggle('users-auth-message-error', isError);
 }
 
+function setProfileQuery(username) {
+  const url = new URL(window.location.href);
+  if (username) {
+    url.searchParams.set('profile', username);
+  } else {
+    url.searchParams.delete('profile');
+  }
+  history.replaceState({}, '', url);
+}
+
 function renderProfileView(profile) {
   // 1. Primary Containers
   const view = document.getElementById('profile-view');
@@ -684,9 +874,9 @@ function renderProfileView(profile) {
   const songWrap = document.getElementById('profile-song-player-wrap');
   
   // 2. Players & Skins
-  const songPlayer = document.getElementById('profile-song-player'); // Youtube iframe
-  const audioPlayer = document.getElementById('profile-audio-player'); // Hidden audio tag
-  const retroSkin = document.getElementById('retro-audio-skin'); // The visual Win95/XP UI
+  const songPlayer = document.getElementById('profile-song-player');
+  const audioPlayer = document.getElementById('profile-audio-player');
+  const retroSkin = document.getElementById('retro-audio-skin');
   const statusText = document.getElementById('audio-status-text');
   const audioPlayBtn = document.getElementById('profile-audio-play-btn');
   const audioStopBtn = document.getElementById('profile-audio-stop-btn');
@@ -711,7 +901,6 @@ function renderProfileView(profile) {
   const bioEl = document.getElementById('profile-bio-view');
   const profileButtonsWrap = document.getElementById('profile-buttons-view');
 
-  // Validation Check
   if (!view || !links || !songWrap || !songPlayer || !avatar || !avatarFallback) return;
   const card = view.querySelector('.profile-card');
 
@@ -727,7 +916,6 @@ function renderProfileView(profile) {
     card.style.setProperty('--profile-panel-bg', theme.colors.panelBg);
   }
 
-  // Set Profile Identity
   currentProfileUsername = profile.username;
   if (displayNameEl) displayNameEl.textContent = profile.displayName;
   if (usernameEl) usernameEl.textContent = `@${profile.username}`;
@@ -753,7 +941,6 @@ function renderProfileView(profile) {
     }
   }
 
-  // Handle Avatar
   if (profile.profileImageUrl) {
     avatar.src = profile.profileImageUrl;
     avatar.style.display = 'block';
@@ -768,7 +955,6 @@ function renderProfileView(profile) {
     avatarFallback.textContent = initialsForProfile(profile);
   }
 
-  // Handle Badges & Notes
   if (badgesWrap) {
     badgesWrap.innerHTML = '';
     badgesForUsername(profile.username).forEach(badge => {
@@ -787,14 +973,13 @@ function renderProfileView(profile) {
   const songEmbed = youtubeEmbedUrl(songUrl);
   const isAudioFile = /\.(mp3|wav|ogg|m4a|flac)$/i.test(songUrl.split(/[#?]/)[0]);
 
-  // Clean slate for players
   songPlayer.style.display = 'none';
   songPlayer.removeAttribute('src');
   if (audioPlayer) {
     audioPlayer.pause();
     audioPlayer.style.display = 'none';
     audioPlayer.removeAttribute('src');
-    audioPlayer.loop = true; // Always loop by default
+    audioPlayer.loop = true;
   }
   if (retroSkin) retroSkin.style.display = 'none';
   if (statusText) statusText.innerText = 'STOPPED';
@@ -833,7 +1018,6 @@ function renderProfileView(profile) {
     audioPlayer.ondurationchange = updateAudioTimeline;
   }
 
-  // Build Profile Link
   const profileLink = document.createElement('a');
   profileLink.className = 'profile-link-btn';
   profileLink.href = `?profile=${encodeURIComponent(profile.username)}#profile`;
@@ -842,7 +1026,6 @@ function renderProfileView(profile) {
   links.appendChild(profileLink);
 
   if (songEmbed) {
-    // YouTube Path
     const songLink = document.createElement('a');
     songLink.className = 'profile-link-btn';
     songLink.href = songUrl;
@@ -855,7 +1038,6 @@ function renderProfileView(profile) {
     songWrap.style.display = 'block';
 
   } else if (isAudioFile) {
-    // Direct Audio Path (Retro Skin)
     const songLink = document.createElement('a');
     songLink.className = 'profile-link-btn';
     songLink.href = songUrl;
@@ -871,7 +1053,7 @@ function renderProfileView(profile) {
 
       audioPlayer.src = songUrl;
       audioPlayer.load();
-      audioPlayer.loop = true; // Always loop by default
+      audioPlayer.loop = true;
       if (retroSkin) retroSkin.style.display = 'block';
       if (audioPlayBtn) {
         audioPlayBtn.disabled = false;
@@ -913,13 +1095,15 @@ function renderProfileView(profile) {
     if (audioLoopBtn) audioLoopBtn.style.display = '';
 
   } else {
-    // No Song
     songWrap.style.display = 'none';
     if (audioLoopBtn) audioLoopBtn.style.display = 'none';
   }
 
   view.style.display = 'block';
   setProfileStatus('');
+
+  // Start comments for this profile
+  startCommentsForProfile(profile.username);
 }
 
 async function loadProfileByUsername(username) {
@@ -951,6 +1135,9 @@ async function loadProfileByUsername(username) {
       setProfileQuery('');
       resetGlobalBarColor();
       resetGlobalBackground();
+      teardownCommentsListener();
+      const section = document.getElementById('profile-comments-section');
+      if (section) section.style.display = 'none';
       return;
     }
 
@@ -967,6 +1154,9 @@ async function loadProfileByUsername(username) {
     setProfileQuery('');
     resetGlobalBarColor();
     resetGlobalBackground();
+    teardownCommentsListener();
+    const section = document.getElementById('profile-comments-section');
+    if (section) section.style.display = 'none';
   }
 }
 
@@ -1295,19 +1485,16 @@ async function showChatUI() {
 
 // Public API
 
-// Timeout any user (guest or registered) by username
 window.timeoutUserByName = async function () {
   if (!currentUserCanModerateChat) return;
   const username = prompt('Enter the username to timeout (case-sensitive):');
   if (!username) return;
   const normalized = normalizeUsername(username);
   try {
-    // Try usernames collection first
     const nameRef = doc(db, 'usernames', normalized);
     const snap = await getDoc(nameRef);
     let targetUid = snap.exists() ? snap.data().uid : null;
     if (!targetUid) {
-      // If not found, search recent chat messages for the username
       const q = query(collection(db, 'messages'), orderBy('time', 'desc'), limit(100));
       const msgSnap = await getDocs(q);
       let found = false;
@@ -1329,6 +1516,7 @@ window.timeoutUserByName = async function () {
     alert('Failed to timeout user: ' + (e && e.message ? e.message : e));
   }
 };
+
 window.openChatTab = async function () {
   const saved = localStorage.getItem('wl_username');
   if (saved) {
@@ -1771,35 +1959,6 @@ window.linkChatToAccount = async function () {
   }
 };
 
-window.timeoutUserByName = async function () {
-  if (!currentUserCanModerateChat) return;
-  const usernameInput = window.prompt('Enter the username to timeout:', '');
-  if (usernameInput === null) return;
-
-  const targetUsername = String(usernameInput || '').trim();
-  const targetLower = normalizeUsername(targetUsername);
-  if (!targetLower) return;
-
-  const nameRef = doc(db, 'usernames', targetLower);
-  const nameSnap = await getDoc(nameRef);
-  if (!nameSnap.exists()) {
-    window.alert('That username is not currently registered in chat.');
-    return;
-  }
-
-  const targetUid = String(nameSnap.data()?.uid || '').trim();
-  if (!targetUid) {
-    window.alert('Could not find a UID for that username.');
-    return;
-  }
-  if (targetUid === uid) {
-    window.alert('You cannot timeout yourself.');
-    return;
-  }
-
-  await applyTimeoutToUid(targetUid, targetUsername);
-};
-
 // Auth state listener
 onAuthStateChanged(auth, async user => {
   currentAccount = user || null;
@@ -1817,6 +1976,13 @@ onAuthStateChanged(auth, async user => {
     if (currentUser) {
       const timeoutBtn = document.getElementById('chat-timeout-btn');
       if (timeoutBtn) timeoutBtn.style.display = 'none';
+    }
+    // Re-render comments section so the form hides if logged out mid-session
+    if (currentProfileUsername) {
+      const hint = document.getElementById('profile-comments-auth-hint');
+      const form = document.getElementById('profile-comment-form');
+      if (hint) hint.textContent = 'Log in to leave a comment.';
+      if (form) form.style.display = 'none';
     }
     await updateChatLinkUI();
     return;
@@ -1842,6 +2008,13 @@ onAuthStateChanged(auth, async user => {
   await refreshFirestoreAdminStatus();
   if (currentUser) {
     await showChatUI();
+  }
+  // Show comment form if a profile is already open
+  if (currentProfileUsername) {
+    const hint = document.getElementById('profile-comments-auth-hint');
+    const form = document.getElementById('profile-comment-form');
+    if (hint) hint.textContent = '';
+    if (form) form.style.display = 'block';
   }
   await updateChatLinkUI();
 });
