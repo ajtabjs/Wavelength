@@ -454,5 +454,12 @@
     "path": "terraria1.4.4/index.html",
     "thumbnail": "webp/ter.webp",
     "description": ""
+  },
+   {
+    "name": "Plants vs Zombies",
+    "slug": "pvz",
+    "path": "pvz/index.html",
+    "thumbnail": "png/pvz.png",
+    "description": ""
   }
 ]
