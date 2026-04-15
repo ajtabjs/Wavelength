@@ -690,6 +690,8 @@ function renderProfileView(profile) {
   const statusText = document.getElementById('audio-status-text');
   const audioPlayBtn = document.getElementById('profile-audio-play-btn');
   const audioStopBtn = document.getElementById('profile-audio-stop-btn');
+  const audioLoopBtn = document.getElementById('profile-audio-loop-btn');
+  const audioLoopIcon = document.getElementById('profile-audio-loop-icon');
   const audioSongName = document.getElementById('audio-song-name');
   const audioArtistName = document.getElementById('audio-artist-name');
   const audioTimeCurrent = document.getElementById('audio-time-current');
@@ -792,6 +794,7 @@ function renderProfileView(profile) {
     audioPlayer.pause();
     audioPlayer.style.display = 'none';
     audioPlayer.removeAttribute('src');
+    audioPlayer.loop = true; // Always loop by default
   }
   if (retroSkin) retroSkin.style.display = 'none';
   if (statusText) statusText.innerText = 'STOPPED';
@@ -868,6 +871,7 @@ function renderProfileView(profile) {
 
       audioPlayer.src = songUrl;
       audioPlayer.load();
+      audioPlayer.loop = true; // Always loop by default
       if (retroSkin) retroSkin.style.display = 'block';
       if (audioPlayBtn) {
         audioPlayBtn.disabled = false;
@@ -887,19 +891,31 @@ function renderProfileView(profile) {
           updateAudioTimeline();
         };
       }
+      if (audioLoopBtn && audioLoopIcon) {
+        audioLoopBtn.style.display = '';
+        audioLoopBtn.setAttribute('aria-pressed', 'true');
+        audioLoopIcon.textContent = 'Loop';
+        audioLoopBtn.onclick = () => {
+          audioPlayer.loop = !audioPlayer.loop;
+          audioLoopBtn.setAttribute('aria-pressed', audioPlayer.loop ? 'true' : 'false');
+          audioLoopIcon.textContent = audioPlayer.loop ? 'Loop' : 'Once';
+        };
+      }
       if (statusText) statusText.innerText = 'LOADING...';
       updateAudioTimeline();
-      
+      if (audioLoopBtn) audioLoopBtn.style.display = '';
       audioPlayer.play().catch(err => {
         console.log("Autoplay blocked:", err);
         if (statusText) statusText.innerText = 'PAUSED';
       });
     }
     songWrap.style.display = 'block';
+    if (audioLoopBtn) audioLoopBtn.style.display = '';
 
   } else {
     // No Song
     songWrap.style.display = 'none';
+    if (audioLoopBtn) audioLoopBtn.style.display = 'none';
   }
 
   view.style.display = 'block';
