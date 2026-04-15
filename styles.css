@@ -639,7 +639,7 @@ body {
 .profile-card {
     width: 100%;
     border: 2px solid;
-    border-color: #808080 #fff #fff #808080;
+    border-color: #808080 #c0c0c0 #c0c0c0 #808080; /* Remove white outline */
     background: linear-gradient(180deg, var(--profile-bg-start, #f8f8f8) 0%, var(--profile-bg-end, #e5e5e5) 100%);
     color: var(--profile-text, #000);
     padding: 12px;
@@ -663,7 +663,7 @@ body {
     width: 64px;
     height: 64px;
     border: 2px solid;
-    border-color: #808080 #fff #fff #808080;
+    border-color: #808080 #c0c0c0 #c0c0c0 #808080; /* Remove white outline */
     background: var(--profile-panel-bg, #fff);
     overflow: hidden;
     display: flex;
@@ -772,9 +772,9 @@ body {
 
 .profile-bio {
     border: 2px solid;
-    border-color: #fff #808080 #808080 #fff;
+    border-color: #c0c0c0 #808080 #808080 #c0c0c0; /* Remove white outline */
     background: var(--profile-panel-bg, #fff);
-    color: var(--profile-text, #000);
+    color: var(--profile-text);
     padding: 8px;
     font-size: 15px;
     min-height: 72px;
