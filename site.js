@@ -397,7 +397,8 @@ function profileFromAccountData(data) {
     profileImageStatus,
     profileThemePreset: theme.preset,
     profileThemeColors: theme.colors,
-    profileButtons
+    profileButtons,
+    profileBadges: Array.isArray(data.profileBadges) ? data.profileBadges : []
   };
 }
 
