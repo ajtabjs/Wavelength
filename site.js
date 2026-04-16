@@ -1956,7 +1956,6 @@ window.saveProfileSettings = async function () {
       profileThemePreset,
       profileThemeColors,
       profileButtons,
-      profileBadges
     });
     usersByUsernameLower.set(profile.usernameLower, profile);
 
