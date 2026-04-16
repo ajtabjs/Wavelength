@@ -32,12 +32,14 @@ let currentProfileUsername = '';
 let latestUsersListDocs = [];
 let badgeDefinitions = new Map();
 let userBadgesByUsernameLower = new Map();
+let reservedBadgeIds = new Set();
 let currentUserCanModerateChat = false;
 let currentUserIsFirestoreAdmin = false;
 let currentTimeoutUntilMs = 0;
 let chatTimeoutUnsubscribe = null;
 const embeddedBadgeConfig = window.__BADGE_CONFIG__ || {};
 const embeddedProfileButtons = window.__PROFILE_BUTTON_ASSETS__ || [];
+let embeddedProfileButtonOverrides = {};
 const DEFAULT_UI_BAR_COLOR = '#000080';
 const MAX_PROFILE_BUTTONS = 150;
 
@@ -91,6 +93,18 @@ const profileButtonAssets = Array.from(
   )
 );
 const profileButtonAssetSet = new Set(profileButtonAssets);
+
+// Load per-user button overrides from JSON (synchronously for Eleventy)
+fetch('./_data/profile-buttons-override.json')
+  .then(r => r.json())
+  .then(obj => {
+    if (obj && typeof obj === 'object' && obj.users) {
+      embeddedProfileButtonOverrides = obj.users;
+    }
+  })
+  .catch(() => {
+    embeddedProfileButtonOverrides = {};
+  });
 
 function initialsForProfile(profile) {
   const source = String(profile.displayName || profile.username || '?').trim();
@@ -387,13 +401,33 @@ function profileFromAccountData(data) {
   };
 }
 
-function renderProfileButtonPicker(selectedButtons = []) {
+function renderProfileButtonPicker(selectedButtons = [], username = null) {
   const picker = document.getElementById('profile-button-picker');
   if (!picker) return;
 
   picker.innerHTML = '';
   if (!profileButtonAssets.length) {
     picker.textContent = 'No profile buttons available.';
+    return;
+  }
+
+  // If user has overrides, show those as non-editable
+  if (username && embeddedProfileButtonOverrides && embeddedProfileButtonOverrides[username]) {
+    const overrides = embeddedProfileButtonOverrides[username];
+    overrides.forEach(btn => {
+      const option = document.createElement('label');
+      option.className = 'users-profile-button-option';
+      const image = document.createElement('img');
+      image.className = 'users-profile-button-image';
+      image.src = btn.image;
+      image.alt = btn.label;
+      image.loading = 'lazy';
+      option.appendChild(image);
+      const span = document.createElement('span');
+      span.textContent = btn.label;
+      option.appendChild(span);
+      picker.appendChild(option);
+    });
     return;
   }
 
@@ -518,6 +552,45 @@ function normalizeBadgeConfig(rawConfig) {
 
   badgeDefinitions = defs;
   userBadgesByUsernameLower = userMap;
+  // Collect badge ids that are explicitly assigned to specific users
+  reservedBadgeIds = new Set();
+  for (const ids of userMap.values()) {
+    ids.forEach(id => reservedBadgeIds.add(id));
+  }
+}
+
+function renderProfileBadgePicker(selected = []) {
+  const picker = document.getElementById('profile-badge-picker');
+  if (!picker) return;
+  picker.innerHTML = '';
+
+  const selectedSet = new Set((selected || []).map(id => normalizeUsername(id)));
+
+  // Render badges that are not reserved for specific users
+  Array.from(badgeDefinitions.values()).forEach(b => {
+    if (reservedBadgeIds.has(b.id)) return;
+    const id = b.id;
+    const option = document.createElement('label');
+    option.className = 'profile-badge-option';
+    option.style.display = 'inline-flex';
+    option.style.alignItems = 'center';
+    option.style.marginRight = '8px';
+    option.style.cursor = 'pointer';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.name = 'profile-badge';
+    checkbox.value = id;
+    checkbox.style.marginRight = '6px';
+    checkbox.checked = selectedSet.has(id);
+
+    const el = buildBadgeElement(b, 'profile-badge');
+    el.style.pointerEvents = 'none';
+
+    option.appendChild(checkbox);
+    option.appendChild(el);
+    picker.appendChild(option);
+  });
 }
 
 async function ensureBadgeConfigLoaded() {
@@ -929,7 +1002,34 @@ function renderProfileView(profile) {
   if (bioEl) bioEl.textContent = profile.bio || 'No bio yet.';
   if (profileButtonsWrap) {
     profileButtonsWrap.innerHTML = '';
-    if (profile.profileButtons.length) {
+    // Show override buttons if present
+    if (embeddedProfileButtonOverrides && embeddedProfileButtonOverrides[profile.username]) {
+      const overrides = embeddedProfileButtonOverrides[profile.username];
+      if (overrides.length) {
+        profileButtonsWrap.style.display = 'flex';
+        overrides.forEach(btn => {
+          const item = document.createElement('span');
+          item.className = 'profile-button-item';
+          const image = document.createElement('img');
+          image.className = 'profile-button-image';
+          image.src = btn.image;
+          image.alt = btn.label;
+          image.loading = 'lazy';
+          item.appendChild(image);
+          if (btn.url) {
+            const a = document.createElement('a');
+            a.href = btn.url;
+            a.target = '_blank';
+            a.appendChild(item);
+            profileButtonsWrap.appendChild(a);
+          } else {
+            profileButtonsWrap.appendChild(item);
+          }
+        });
+      } else {
+        profileButtonsWrap.style.display = 'none';
+      }
+    } else if (profile.profileButtons.length) {
       profileButtonsWrap.style.display = 'flex';
       profile.profileButtons.forEach((assetPath) => {
         const item = document.createElement('span');
@@ -963,9 +1063,17 @@ function renderProfileView(profile) {
 
   if (badgesWrap) {
     badgesWrap.innerHTML = '';
-    badgesForUsername(profile.username).forEach(badge => {
-      badgesWrap.appendChild(buildBadgeElement(badge, 'profile-badge'));
+    const reserved = badgesForUsername(profile.username) || [];
+    const chosen = Array.isArray(profile.profileBadges) ? profile.profileBadges
+      .map(id => badgeDefinitions.get(normalizeUsername(id))).filter(Boolean) : [];
+    const seen = new Set();
+    const combined = [];
+    reserved.concat(chosen).forEach(b => {
+      if (!b || seen.has(b.id)) return;
+      seen.add(b.id);
+      combined.push(b);
     });
+    combined.forEach(badge => badgesWrap.appendChild(buildBadgeElement(badge, 'profile-badge')));
   }
   if (imageNote) {
     const hint = profileImageHintFromStatus(profile);
@@ -1166,7 +1274,7 @@ async function loadProfileByUsername(username) {
   }
 }
 
-function fillProfileSettings(profile) {
+async function fillProfileSettings(profile) {
   const displayName = document.getElementById('profile-display-name');
   const pronouns = document.getElementById('profile-pronouns');
   const songUrl = document.getElementById('profile-song-url');
@@ -1188,7 +1296,8 @@ function fillProfileSettings(profile) {
   if (bio) bio.value = profile.bio || '';
   if (themePreset) themePreset.value = theme.preset;
   setThemeInputValues(theme.colors);
-  renderProfileButtonPicker(profile.profileButtons || []);
+  renderProfileButtonPicker(profile.profileButtons || [], profile.username);
+  // Remove badge picker from customization
 }
 
 window.applyProfileThemePreset = function () {
@@ -1243,12 +1352,16 @@ function renderUsersList(docs) {
     row.appendChild(rank);
     row.appendChild(link);
 
-    if (badges.length) {
+    const reserved = badgesForUsername(profile.username) || [];
+    const chosen = Array.isArray(profile.profileBadges) ? profile.profileBadges
+      .map(id => badgeDefinitions.get(normalizeUsername(id))).filter(Boolean) : [];
+    const seen = new Set();
+    const combined = [];
+    reserved.concat(chosen).forEach(b => { if (!b || seen.has(b.id)) return; seen.add(b.id); combined.push(b); });
+    if (combined.length) {
       const badgesWrap = document.createElement('span');
       badgesWrap.className = 'users-list-badges';
-      badges.forEach((badge) => {
-        badgesWrap.appendChild(buildBadgeElement(badge, 'users-list-badge'));
-      });
+      combined.forEach((badge) => badgesWrap.appendChild(buildBadgeElement(badge, 'users-list-badge')));
       row.appendChild(badgesWrap);
     }
 
@@ -1284,7 +1397,7 @@ function startSendCooldown() {
   input.disabled = true;
   btn.disabled = true;
 
-  let remaining = 5;
+  let remaining = 3;
   input.placeholder = `wait ${remaining}s before sending...`;
 
   const interval = setInterval(() => {
@@ -1376,7 +1489,15 @@ function renderMessage(docSnap) {
   const isMine = data.uid === uid;
   const canDelete = isMine || currentUserCanModerateChat;
   const username = String(data.user || '').trim() || 'user';
-  const badges = badgesForUsername(username);
+  // Combine reserved badges (from global config) with user-selected badges
+  const reserved = badgesForUsername(username) || [];
+  const profile = usersByUsernameLower.get(normalizeUsername(username));
+  const chosen = profile && Array.isArray(profile.profileBadges)
+    ? profile.profileBadges.map(id => badgeDefinitions.get(normalizeUsername(id))).filter(Boolean)
+    : [];
+  const seen = new Set();
+  const badges = [];
+  reserved.concat(chosen).forEach(b => { if (!b || seen.has(b.id)) return; seen.add(b.id); badges.push(b); });
   const time = data.time?.toDate
     ? data.time.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : '';
@@ -1700,7 +1821,7 @@ window.openProfileSettings = async function () {
   try {
     const snap = await getDoc(doc(db, 'accounts', currentAccount.uid));
     const profile = profileFromAccountData(snap.exists() ? snap.data() : {});
-    fillProfileSettings(profile);
+    await fillProfileSettings(profile);
     const settings = document.getElementById('users-settings');
     if (settings) settings.style.display = 'block';
     setUsersMessage('');
@@ -1804,6 +1925,7 @@ window.saveProfileSettings = async function () {
       profileThemePreset,
       profileThemeColors,
       profileButtons,
+        profileBadges,
       updatedAt: serverTimestamp()
     };
 
@@ -1827,7 +1949,8 @@ window.saveProfileSettings = async function () {
       profileImageStatus,
       profileThemePreset,
       profileThemeColors,
-      profileButtons
+      profileButtons,
+      profileBadges
     });
     usersByUsernameLower.set(profile.usernameLower, profile);
 

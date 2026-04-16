@@ -1,0 +1,18 @@
+{
+  "users": {
+    "December": [
+      {
+        "label": "Mod Panel",
+        "url": "https://admin.example.com",
+        "image": "./assets/buttons/modpanel.png"
+      }
+    ],
+    "aj": [
+      {
+        "label": "Owner Tools",
+        "url": "https://owner.example.com",
+        "image": "./assets/buttons/ownertools.png"
+      }
+    ]
+  }
+}
