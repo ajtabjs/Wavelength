@@ -24,6 +24,12 @@
       "title": "gay",
       "image": "./assets/badges/users/gay.jpg"
     },
+    {
+      "id": "celebrity",
+      "label": "celebrity",
+      "title": "celebrity",
+      "image": "./assets/badges/users/star-nobg.png"
+    },
      {
       "id": "bug",
       "label": "bug",
@@ -42,6 +48,7 @@
     "cl": ["well-known", "gay"],
     "lulu": ["gay"],
     "‎ ‎": ["bug"],
-    "‮soahc": ["bug"]
+    "‮soahc": ["bug"],
+    "Jeffery_Epstein": ["celebrity"]
   }
 }
