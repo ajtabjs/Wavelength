@@ -323,6 +323,16 @@
     const game = allGames.find(g => g.slug === slug && g.type === type);
     if (!game) return;
 
+    // Block "My Femboy Roommate" (slug: "mfr"). Show popup and do not start the game.
+    if (game.slug === "mfr" || (game.name && game.name.toLowerCase().includes("my femboy roommate"))) {
+      try {
+        alert("this game has moved to potato! please use that site for any other game requests, thanks!");
+      } catch (e) {
+        // fallback: do nothing else
+      }
+      return;
+    }
+
     const gameUrl = buildGameUrl(game);
 
     console.log(`[games-loader] cdn=${currentCdn} type=${type} cdnKey=${game.cdn || game.type}`);
