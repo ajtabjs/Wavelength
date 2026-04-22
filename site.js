@@ -212,6 +212,26 @@ const stickerAssets = createChatAssetCatalog(embeddedStickerAssets, 'stickers', 
 const emojiAssetsByKey = new Map(emojiAssets.map((asset) => [asset.key, asset]));
 const stickerAssetsByKey = new Map(stickerAssets.map((asset) => [asset.key, asset]));
 
+function createChatAssetAliasMap(assets) {
+  const aliases = new Map();
+  const ambiguous = new Set();
+  (Array.isArray(assets) ? assets : []).forEach((asset) => {
+    const alias = String(asset && asset.key ? asset.key.split('/').pop() : '').trim().toLowerCase();
+    if (!alias || ambiguous.has(alias)) return;
+    const existing = aliases.get(alias);
+    if (existing && existing.key !== asset.key) {
+      aliases.delete(alias);
+      ambiguous.add(alias);
+      return;
+    }
+    aliases.set(alias, asset);
+  });
+  return aliases;
+}
+
+const emojiAssetsByAlias = createChatAssetAliasMap(emojiAssets);
+const stickerAssetsByAlias = createChatAssetAliasMap(stickerAssets);
+
 function labelFromButtonPath(pathValue) {
   return pathValue
     .replace(/^\.\/assets\/buttons\//, '')
@@ -1766,11 +1786,30 @@ function renderInlineChatAsset(type, key) {
   return `<img src="${esc(asset.path)}" class="chat-inline-asset${extraClass}" alt="${esc(asset.key)}" title="${esc(asset.key)}">`;
 }
 
+function renderInlineChatAssetAlias(alias) {
+  const normalizedAlias = String(alias || '').trim().toLowerCase();
+  if (!normalizedAlias) return '';
+  if (normalizedAlias.includes('/')) {
+    const fromEmojiKey = renderInlineChatAsset('emoji', normalizedAlias);
+    if (fromEmojiKey) return fromEmojiKey;
+    return renderInlineChatAsset('sticker', normalizedAlias);
+  }
+  const emojiAsset = emojiAssetsByAlias.get(normalizedAlias);
+  if (emojiAsset) return renderInlineChatAsset('emoji', emojiAsset.key);
+  const stickerAsset = stickerAssetsByAlias.get(normalizedAlias);
+  if (stickerAsset) return renderInlineChatAsset('sticker', stickerAsset.key);
+  return '';
+}
+
 function renderMessageHtml(textValue) {
   let html = esc(String(textValue || ''));
   html = html.replace(/:(emoji|sticker):([a-z0-9/_-]+):/gi, (_, type, key) => {
     const inline = renderInlineChatAsset(type, key);
     return inline || esc(`:${type}:${key}:`);
+  });
+  html = html.replace(/:([a-z0-9/_-]+):/gi, (_, alias) => {
+    const inline = renderInlineChatAssetAlias(alias);
+    return inline || esc(`:${alias}:`);
   });
   const usernames = Array.from(usersByUsernameLower.values()).map((u) => u.username).sort((a, b) => b.length - a.length);
   if (usernames.length) {
