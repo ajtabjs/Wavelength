@@ -228,10 +228,24 @@ permalink: /index.html
                   <div class="panel-body" style="padding:0;display:flex;flex-direction:column;height:68vh;">
                     <div id="chat-messages" class="chat-messages"></div>
                     <div class="chat-footer">
-                      <input id="chat-msg-input" class="chat-input-field" type="text" maxlength="500"
-                        placeholder="type a message and press Enter..."
-                        onkeydown="if(event.key==='Enter')sendMessage()">
-                      <button class="win-btn" onclick="sendMessage()">[ SEND ]</button>
+                      <div class="chat-composer">
+                        <input id="chat-msg-input" class="chat-input-field" type="text" maxlength="500"
+                          placeholder="type a message and press Enter..."
+                          onkeydown="if(event.key==='Enter')sendMessage()">
+                        <button id="chat-emoji-btn" class="win-btn" type="button">[ EMOJI ]</button>
+                        <button id="chat-sticker-btn" class="win-btn" type="button">[ STICKER ]</button>
+                        <button id="chat-send-btn" class="win-btn" onclick="sendMessage()">[ SEND ]</button>
+                      </div>
+                      <div id="chat-asset-picker" class="chat-asset-picker" style="display:none;">
+                        <div class="chat-asset-picker-header">
+                          <button id="chat-asset-tab-emoji" class="win-btn chat-asset-tab" type="button">emoji</button>
+                          <button id="chat-asset-tab-sticker" class="win-btn chat-asset-tab" type="button">sticker</button>
+                          <input id="chat-asset-search" class="chat-input-field chat-asset-search" type="text" maxlength="40" placeholder="search...">
+                          <button id="chat-asset-close" class="win-btn" type="button">[ X ]</button>
+                        </div>
+                        <div id="chat-asset-grid" class="chat-asset-grid"></div>
+                        <div id="chat-asset-empty" class="chat-asset-empty" style="display:none;">no results</div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -578,6 +592,8 @@ permalink: /index.html
       window.__CREDITS_MAPPING__ = {{ creditsMapping | dump | safe }};
       window.__BADGE_CONFIG__ = {{ profileBadges | dump | safe }};
       window.__PROFILE_BUTTON_ASSETS__ = {{ profileButtons | dump | safe }};
+      window.__CHAT_EMOJI_ASSETS__ = {{ chatAssets.emojis | dump | safe }};
+      window.__CHAT_STICKER_ASSETS__ = {{ chatAssets.stickers | dump | safe }};
       window.__POPULAR_GAMES__ = {{ popularGames | dump | safe }};
       window.__GAMES_DATA__ = [
         {% for g in htmlGames %}

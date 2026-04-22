@@ -386,6 +386,20 @@ body {
 }
 .msg-time  { font-size: 9px; color: #888; white-space: nowrap; }
 .msg-text  { color: #222; flex: 1; word-break: break-word; }
+.chat-inline-asset {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    vertical-align: text-bottom;
+}
+
+.chat-inline-sticker {
+    width: auto;
+    height: auto;
+    max-width: 140px;
+    max-height: 120px;
+    vertical-align: middle;
+}
 
 /* Your own messages: username shows in orange to match credits style */
 .chat-msg-mine .msg-user { color: #804000; }
@@ -425,10 +439,108 @@ body {
 }
 
 .chat-footer {
-    display: flex; gap: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
     padding: 6px;
     border-top: 2px solid #808080;
     background: #c0c0c0;
+    position: relative;
+}
+
+.chat-composer {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+}
+
+.chat-composer .chat-input-field {
+    min-width: 0;
+}
+
+.chat-asset-picker {
+    border: 2px solid;
+    border-color: #fff #808080 #808080 #fff;
+    background: #efefef;
+    padding: 6px;
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.25);
+}
+
+.chat-asset-picker-header {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.chat-asset-tab {
+    min-width: 58px;
+    text-transform: uppercase;
+}
+
+.chat-asset-tab.chat-asset-tab-active {
+    background: #d8d8d8;
+    border-color: #808080 #fff #fff #808080;
+}
+
+.chat-asset-search {
+    max-width: 180px;
+}
+
+.chat-asset-grid {
+    max-height: 220px;
+    overflow-y: auto;
+    border: 2px solid;
+    border-color: #808080 #fff #fff #808080;
+    background: #fff;
+    padding: 6px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    gap: 6px;
+}
+
+.chat-asset-option {
+    border: 1px solid #c0c0c0;
+    background: #f7f7f7;
+    padding: 4px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-height: 58px;
+}
+
+.chat-asset-option:hover {
+    background: #ededed;
+}
+
+.chat-asset-option-preview {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    image-rendering: auto;
+}
+
+.chat-asset-option-sticker .chat-asset-option-preview {
+    width: 44px;
+    height: 44px;
+}
+
+.chat-asset-option-label {
+    max-width: 100%;
+    font-size: 9px;
+    color: #333;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chat-asset-empty {
+    margin-top: 6px;
+    font-size: 10px;
+    color: #444;
 }
 
 .chat-input-field {

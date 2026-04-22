@@ -64,6 +64,7 @@ const origShowChatUI = showChatUI;
 showChatUI = async function() {
   await origShowChatUI.apply(this, arguments);
   setupChatMentionAutocomplete();
+  setupChatAssetPicker();
 };
 
 // site.js - Complete merged version with profile comments
@@ -106,6 +107,8 @@ let currentTimeoutUntilMs = 0;
 let chatTimeoutUnsubscribe = null;
 const embeddedBadgeConfig = window.__BADGE_CONFIG__ || {};
 const embeddedProfileButtons = window.__PROFILE_BUTTON_ASSETS__ || [];
+const embeddedEmojiAssets = window.__CHAT_EMOJI_ASSETS__ || [];
+const embeddedStickerAssets = window.__CHAT_STICKER_ASSETS__ || [];
 let embeddedProfileButtonOverrides = {};
 const DEFAULT_UI_BAR_COLOR = '#000080';
 const MAX_PROFILE_BUTTONS = 150;
@@ -143,6 +146,63 @@ function normalizeButtonAssetPath(value) {
   return '';
 }
 
+function normalizeChatAssetPath(value, folderName) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  const normalizedFolder = String(folderName || '').trim().toLowerCase();
+  if (!normalizedFolder) return '';
+  const relPrefix = `./assets/${normalizedFolder}/`;
+  const rootPrefix = `/assets/${normalizedFolder}/`;
+  const barePrefix = `assets/${normalizedFolder}/`;
+  if (raw.startsWith(relPrefix)) return raw;
+  if (raw.startsWith(rootPrefix)) return `.${raw}`;
+  if (raw.startsWith(barePrefix)) return `./${raw}`;
+  return '';
+}
+
+function chatAssetKey(pathValue, folderName) {
+  const cleaned = String(pathValue || '').trim();
+  const normalizedFolder = String(folderName || '').trim().toLowerCase();
+  const withoutPrefix = cleaned.replace(new RegExp(`^\\./assets/${normalizedFolder}/`, 'i'), '');
+  return withoutPrefix
+    .replace(/\.[a-z0-9]+$/i, '')
+    .replace(/\\/g, '/')
+    .toLowerCase();
+}
+
+function chatAssetLabel(pathValue, folderName) {
+  return String(pathValue || '')
+    .replace(new RegExp(`^\\./assets/${String(folderName || '').trim().toLowerCase()}/`, 'i'), '')
+    .replace(/\.[a-z0-9]+$/i, '')
+    .replace(/[_-]+/g, ' ')
+    .trim() || 'asset';
+}
+
+function createChatAssetCatalog(values, folderName, type) {
+  const deduped = Array.from(new Set((Array.isArray(values) ? values : [])
+    .map((value) => normalizeChatAssetPath(value, folderName))
+    .filter(Boolean)));
+  return deduped
+    .map((pathValue) => {
+      const key = chatAssetKey(pathValue, folderName);
+      if (!key) return null;
+      return {
+        type,
+        folder: folderName,
+        path: pathValue,
+        key,
+        token: `:${type}:${key}:`,
+        label: chatAssetLabel(pathValue, folderName)
+      };
+    })
+    .filter(Boolean);
+}
+
+const emojiAssets = createChatAssetCatalog(embeddedEmojiAssets, 'emojis', 'emoji');
+const stickerAssets = createChatAssetCatalog(embeddedStickerAssets, 'stickers', 'sticker');
+const emojiAssetsByKey = new Map(emojiAssets.map((asset) => [asset.key, asset]));
+const stickerAssetsByKey = new Map(stickerAssets.map((asset) => [asset.key, asset]));
+
 function labelFromButtonPath(pathValue) {
   return pathValue
     .replace(/^\.\/assets\/buttons\//, '')
@@ -170,6 +230,113 @@ fetch('./_data/profile-buttons-override.json')
   .catch(() => {
     embeddedProfileButtonOverrides = {};
   });
+
+function insertTextAtCursor(input, text) {
+  if (!input) return;
+  const start = Number.isFinite(input.selectionStart) ? input.selectionStart : input.value.length;
+  const end = Number.isFinite(input.selectionEnd) ? input.selectionEnd : input.value.length;
+  const before = input.value.slice(0, start);
+  const after = input.value.slice(end);
+  input.value = `${before}${text}${after}`;
+  const nextPos = before.length + text.length;
+  input.selectionStart = nextPos;
+  input.selectionEnd = nextPos;
+  input.focus();
+}
+
+function setupChatAssetPicker() {
+  const picker = document.getElementById('chat-asset-picker');
+  const emojiBtn = document.getElementById('chat-emoji-btn');
+  const stickerBtn = document.getElementById('chat-sticker-btn');
+  const emojiTab = document.getElementById('chat-asset-tab-emoji');
+  const stickerTab = document.getElementById('chat-asset-tab-sticker');
+  const closeBtn = document.getElementById('chat-asset-close');
+  const searchInput = document.getElementById('chat-asset-search');
+  const grid = document.getElementById('chat-asset-grid');
+  const empty = document.getElementById('chat-asset-empty');
+  const input = document.getElementById('chat-msg-input');
+
+  if (!picker || !emojiBtn || !stickerBtn || !emojiTab || !stickerTab || !closeBtn || !searchInput || !grid || !empty || !input) {
+    return;
+  }
+  if (picker.dataset.initialized === '1') return;
+  picker.dataset.initialized = '1';
+
+  let activeType = 'emoji';
+
+  function assetsForActiveType() {
+    return activeType === 'sticker' ? stickerAssets : emojiAssets;
+  }
+
+  function updateTabStyles() {
+    emojiTab.classList.toggle('chat-asset-tab-active', activeType === 'emoji');
+    stickerTab.classList.toggle('chat-asset-tab-active', activeType === 'sticker');
+  }
+
+  function renderPickerItems() {
+    const needle = normalizeUsername(searchInput.value);
+    const source = assetsForActiveType();
+    const filtered = needle
+      ? source.filter((asset) => asset.key.includes(needle) || asset.label.toLowerCase().includes(needle))
+      : source;
+    grid.innerHTML = '';
+    empty.style.display = filtered.length ? 'none' : 'block';
+    filtered.slice(0, 240).forEach((asset) => {
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.className = `chat-asset-option chat-asset-option-${asset.type}`;
+      option.title = asset.key;
+
+      const preview = document.createElement('img');
+      preview.className = 'chat-asset-option-preview';
+      preview.src = asset.path;
+      preview.alt = asset.label;
+      preview.loading = 'lazy';
+
+      const label = document.createElement('span');
+      label.className = 'chat-asset-option-label';
+      label.textContent = asset.key.split('/').pop() || asset.label;
+
+      option.appendChild(preview);
+      option.appendChild(label);
+      option.addEventListener('click', () => {
+        insertTextAtCursor(input, `${asset.token} `);
+      });
+      grid.appendChild(option);
+    });
+  }
+
+  function openPicker(type) {
+    activeType = type === 'sticker' ? 'sticker' : 'emoji';
+    updateTabStyles();
+    renderPickerItems();
+    picker.style.display = 'block';
+    searchInput.focus();
+    searchInput.select();
+  }
+
+  function closePicker() {
+    picker.style.display = 'none';
+  }
+
+  emojiBtn.addEventListener('click', () => openPicker('emoji'));
+  stickerBtn.addEventListener('click', () => openPicker('sticker'));
+  emojiTab.addEventListener('click', () => openPicker('emoji'));
+  stickerTab.addEventListener('click', () => openPicker('sticker'));
+  closeBtn.addEventListener('click', closePicker);
+  searchInput.addEventListener('input', renderPickerItems);
+  searchInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closePicker();
+      input.focus();
+    }
+  });
+  document.addEventListener('click', (event) => {
+    if (picker.style.display === 'none') return;
+    if (picker.contains(event.target) || emojiBtn.contains(event.target) || stickerBtn.contains(event.target)) return;
+    closePicker();
+  });
+}
 
 function initialsForProfile(profile) {
   const source = String(profile.displayName || profile.username || '?').trim();
@@ -935,7 +1102,7 @@ function isCurrentUserTimedOut() {
 
 function updateChatInputState() {
   const input = document.getElementById('chat-msg-input');
-  const btn = document.querySelector('.chat-footer .win-btn');
+  const btn = document.getElementById('chat-send-btn');
   if (!input || !btn) return;
 
   const defaultPlaceholder = input.dataset.defaultPlaceholder || input.placeholder || 'type a message...';
@@ -1578,6 +1745,36 @@ function startListener() {
   });
 }
 
+function renderInlineChatAsset(type, key) {
+  const normalizedType = String(type || '').trim().toLowerCase();
+  const normalizedKey = String(key || '').trim().toLowerCase();
+  if (!normalizedKey) return '';
+  const asset = normalizedType === 'sticker'
+    ? stickerAssetsByKey.get(normalizedKey)
+    : emojiAssetsByKey.get(normalizedKey);
+  if (!asset) return '';
+  const extraClass = normalizedType === 'sticker' ? ' chat-inline-sticker' : '';
+  return `<img src="${esc(asset.path)}" class="chat-inline-asset${extraClass}" alt="${esc(asset.key)}" title="${esc(asset.key)}">`;
+}
+
+function renderMessageHtml(textValue) {
+  let html = esc(String(textValue || ''));
+  html = html.replace(/:(emoji|sticker):([a-z0-9/_-]+):/gi, (_, type, key) => {
+    const inline = renderInlineChatAsset(type, key);
+    return inline || esc(`:${type}:${key}:`);
+  });
+  const usernames = Array.from(usersByUsernameLower.values()).map((u) => u.username).sort((a, b) => b.length - a.length);
+  if (usernames.length) {
+    const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const mentionRegex = new RegExp(`@(${usernames.map(escapeRegex).join('|')})\\b`, 'gi');
+    html = html.replace(mentionRegex, (full, uname) => {
+      const encoded = encodeURIComponent(uname);
+      return `<a href="?profile=${encoded}" class="chat-mention" data-username="${encoded}">@${esc(uname)}</a>`;
+    });
+  }
+  return html;
+}
+
 function renderMessage(docSnap) {
   const data = docSnap.data();
   const isMine = data.uid === uid;
@@ -1621,25 +1818,13 @@ function renderMessage(docSnap) {
 
   const textEl = document.createElement('span');
   textEl.className = 'msg-text';
-  // Mention parsing: replace @username with a span
-  let msg = String(data.text || '');
-  // Build a regex of all known usernames (case-insensitive)
-  const usernames = Array.from(usersByUsernameLower.values()).map(u => u.username).sort((a,b)=>b.length-a.length);
-  if (usernames.length) {
-    // Escape regex special chars in usernames
-    const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const mentionRegex = new RegExp(`@(${usernames.map(esc).join('|')})\\b`, 'gi');
-    msg = msg.replace(mentionRegex, (m, uname) => {
-      // Link to profile tab with ?profile=username
-      return `<a href="?profile=${encodeURIComponent(uname)}" class=\"chat-mention\" data-username="${uname}">@${uname}</a>`;
-    });
-  }
-  textEl.innerHTML = msg;
+  textEl.innerHTML = renderMessageHtml(data.text);
   // Add click handler to open profile tab without page reload
   textEl.querySelectorAll && textEl.querySelectorAll('.chat-mention').forEach(link => {
     link.addEventListener('click', function(e) {
       e.preventDefault();
-      const uname = link.getAttribute('data-username');
+      const encodedUname = link.getAttribute('data-username');
+      const uname = encodedUname ? decodeURIComponent(encodedUname) : '';
       if (uname && typeof window.switchTab === 'function') {
         window.switchTab('profile');
         if (typeof window.loadProfileByUsername === 'function') {
