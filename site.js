@@ -164,10 +164,15 @@ function chatAssetKey(pathValue, folderName) {
   const cleaned = String(pathValue || '').trim();
   const normalizedFolder = String(folderName || '').trim().toLowerCase();
   const withoutPrefix = cleaned.replace(new RegExp(`^\\./assets/${normalizedFolder}/`, 'i'), '');
-  return withoutPrefix
+  const normalized = withoutPrefix
     .replace(/\.[a-z0-9]+$/i, '')
     .replace(/\\/g, '/')
-    .toLowerCase();
+    .toLowerCase()
+    .replace(/[^a-z0-9/_-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/\/+/g, '/')
+    .replace(/^[-/]+|[-/]+$/g, '');
+  return normalized;
 }
 
 function chatAssetLabel(pathValue, folderName) {
@@ -182,10 +187,14 @@ function createChatAssetCatalog(values, folderName, type) {
   const deduped = Array.from(new Set((Array.isArray(values) ? values : [])
     .map((value) => normalizeChatAssetPath(value, folderName))
     .filter(Boolean)));
+  const keyCounts = new Map();
   return deduped
     .map((pathValue) => {
-      const key = chatAssetKey(pathValue, folderName);
-      if (!key) return null;
+      const baseKey = chatAssetKey(pathValue, folderName);
+      if (!baseKey) return null;
+      const count = (keyCounts.get(baseKey) || 0) + 1;
+      keyCounts.set(baseKey, count);
+      const key = count > 1 ? `${baseKey}-${count}` : baseKey;
       return {
         type,
         folder: folderName,
