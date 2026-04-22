@@ -2058,7 +2058,6 @@ window.sendMessage = async function () {
       if (allowed.indexOf(src) !== -1) {
         payload.text = '';
         payload.image = src;
-        payload.imageType = 'sticker';
       }
     }
   }

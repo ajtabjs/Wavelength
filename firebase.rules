@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.admin == true;
+    }
+
+    function isUidTimedOut(chatUid) {
+      return chatUid is string
+        && chatUid.size() > 0
+        && exists(/databases/$(database)/documents/chatTimeouts/$(chatUid))
+        && get(/databases/$(database)/documents/chatTimeouts/$(chatUid)).data.untilMs is int
+        && get(/databases/$(database)/documents/chatTimeouts/$(chatUid)).data.untilMs > request.time.toMillis();
+    }
+
+    match /messages/{id} {
+      allow read: if true;
+
+      // Creates are allowed only if the request is not from a timed-out uid and the payload
+      // satisfies basic structural and safety checks to prevent XSS and external images.
+      allow create: if !isUidTimedOut(request.resource.data.uid)
+        // must include a non-empty uid and username
+        && request.resource.data.uid is string
+        && request.resource.data.uid.size() > 0
+        && request.resource.data.user is string
+        && request.resource.data.user.size() > 0
+        && request.resource.data.user.size() <= 24
+        // text (if present) must be a string, not contain angle brackets, and be reasonably sized
+        && (request.resource.data.text == null || (
+             request.resource.data.text is string
+             && request.resource.data.text.size() <= 2000
+             && !request.resource.data.text.matches('.*[<>].*')
+           ))
+        // image (if present) must be a relative asset path into the repository assets folder
+        // and cannot be an external URL.
+        && (request.resource.data.image == null || (
+             request.resource.data.image is string
+             && request.resource.data.image.matches('^\\./assets\\/(stickers|emojis)\\/[^\\s]+$')
+           ));
+
+      // Keep delete open for now (UI currently allows deletion by owner using client-side uid).
+      allow delete: if true;
+    }
+
+    match /usernames/{name} {
+      allow read, write: if true;
+    }
+
+    match /accounts/{uid} {
+      allow read: if true;
+      allow write: if request.auth.uid == uid;
+    }
+
+    match /admins/{uid} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    match /chatTimeouts/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow write: if isAdmin();
+    }
+    
+    match /accounts/{uid}/profileComments/{commentId} {
+  allow read: if true;
+  allow create: if isSignedIn()
+    && request.resource.data.authorUid == request.auth.uid
+    && request.resource.data.text is string
+    && request.resource.data.text.size() > 0
+    && request.resource.data.text.size() <= 300;
+  allow delete: if isSignedIn()
+    && (resource.data.authorUid == request.auth.uid || isAdmin());
+}
+  }
+}
