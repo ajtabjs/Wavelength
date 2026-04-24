@@ -1055,11 +1055,9 @@ window.switchTab = function switchTab(name, e) {
     if (tabButton) tabButton.classList.add('active');
   }
   if (name === 'chat') {
-    if (window.openChatTab) {
-      window.openChatTab();
-    } else {
-      window._chatTabPending = true;
-    }
+    alert('chat has been moved to squawker! please chat there');
+    window.open('https://squawker.pages.dev', '_blank', 'noopener,noreferrer');
+    return;
   }
   if (name === 'users') {
     if (window.openUsersTab) {
