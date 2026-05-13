@@ -176,14 +176,6 @@
     "description": ""
   },
   {
-    "name": "Among Us",
-    "slug": "among-us",
-    "path": "among-us/index.html",
-    "cdn": "html",
-    "thumbnail": "png/among-us.png",
-    "description": ""
-  },
-  {
     "name": "Angel Under",
     "slug": "angelunder",
     "path": "angelunder/index.html",
